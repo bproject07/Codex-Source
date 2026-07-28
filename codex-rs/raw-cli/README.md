@@ -35,6 +35,7 @@ Every change to this crate should preserve these properties:
 | File | Responsibility |
 |---|---|
 | `src/lib.rs` | CLI parsing, command dispatch, login, logout, status, and Raw home ownership |
+| `src/update/` | Verified GitHub release lookup, bounded archive extraction, platform replacement, service health checks, and rollback |
 | `src/runtime.rs` | Shared auth manager, model manager, text/image transport, request construction, and stream normalization |
 | `src/app_server.rs` | JSONL process lifecycle, thread handles, and sequential turns |
 | `src/app_server_wire.rs` | Small app-server parsers and response/notification builders |
@@ -58,9 +59,9 @@ Every change to this crate should preserve these properties:
 - `--home DIR`, also available through `CODEX_RAW_HOME`;
 - `--model MODEL` or `-m MODEL`.
 
-The explicit subcommands are `login`, `logout`, `status`, `send`, `app-server`,
-and `api-server`. Clap external-subcommand handling converts any unknown command
-into prompt text, allowing `codex-raw hello` to behave like
+The explicit subcommands are `login`, `logout`, `status`, `update`, `send`,
+`app-server`, and `api-server`. Clap external-subcommand handling converts any
+unknown command into prompt text, allowing `codex-raw hello` to behave like
 `codex-raw send hello`.
 
 All prompt arguments are joined with a single space. Empty prompts are rejected
@@ -71,6 +72,8 @@ Typical commands:
 ```powershell
 codex-raw login
 codex-raw status
+codex-raw update --check
+codex-raw update
 codex-raw -m gpt-5.4-mini send "Explain Tokio in one paragraph"
 codex-raw api-server --listen 127.0.0.1:8080 --max-concurrency 16
 ```
@@ -84,6 +87,57 @@ commands). Raw never prints the configured token.
 `--model` is the default text model for one-shot, app-server, Responses, and
 Chat requests. A per-request `model` overrides it. Image generation has its own
 request model and defaults to `gpt-image-2`.
+
+## Verified binary updates
+
+`codex-raw update --check` queries the latest stable release without writing
+files, creating a Raw home, or touching a service. `codex-raw update` installs a
+newer release for Windows x64, Linux x64, Linux ARM64, or macOS Intel.
+
+The updater is pinned to `bproject07/Codex-Source`. It accepts only a canonical
+`codex-raw-v<semver>` release that the current GitHub API reports as stable,
+published, and immutable. The platform archive and `SHA256SUMS` must each be
+the single exact expected asset with an exact repository download URL and a
+GitHub SHA-256 digest. The downloaded archive must match both its GitHub digest
+and its exact `SHA256SUMS` entry. Extraction reads only the expected regular
+binary at the expected bundle path; it never unpacks arbitrary archive paths.
+The updater refuses same-version installs and downgrades.
+
+The candidate binary is staged beside the installed executable, made
+executable where applicable, and required to report the release version before
+replacement. The previous executable is retained under a timestamped hidden
+backup name.
+
+On Windows, the running executable cannot replace itself. Raw launches a
+detached helper, waits for it to open the shared lock file, releases its own
+byte-range lock, and exits only after the helper proves ownership of that exact
+range. The helper uses Restart Manager to request graceful shutdown only from
+processes whose identity and full image path match the exact installed
+`codex-raw.exe`. It never force-kills or kills by name. Every wait is bounded;
+on failure it stops closed, preserves recoverable artifacts, and writes the
+reported status file. After the new version is verified, Restart Manager
+restarts eligible registered processes and services. Raw also attempts that
+restart after replacement failure or rollback and includes restart errors in
+the status report.
+
+On Linux, use `sudo codex-raw update` for a root-owned installation. If
+`codex-raw-api.service` is active, Raw verifies that its `MainPID` is executing
+the exact binary being updated before stopping it. The service receives
+SIGTERM and the API drains through graceful shutdown. Raw installs the
+candidate and starts the same unit. If startup or verification fails, Raw
+attempts a best-effort rollback only after safely stopping the failed service,
+and reports rollback or recovery errors. It never stops a differently owned
+unit or kills processes by name. Without that exact active unit, existing
+processes are left running and must be restarted manually.
+
+Repository owners must enable GitHub immutable releases. A mutable release is
+deliberately unusable by this updater.
+
+The updater first ships in `codex-raw 0.1.0`. Any pre-`0.1.0` installation,
+including one reporting `0.0.0`, requires one manual verified installation of
+an updater-enabled release. The GitHub fetch path can be tested end to end only
+after the public repository has a published immutable release with all exact
+assets; local tests do not pretend that such a release already exists.
 
 ## Raw home ownership
 
@@ -441,9 +495,10 @@ just fmt
 cargo build --release -p codex-raw
 ```
 
-The suite covers home isolation, minimal request construction, app-server wire
-behavior, HTTP validation, Responses, Chat and image mapping, SSE lifecycle
-ordering, usage, and function-call correlation.
+The suite covers home isolation, verified release selection and extraction,
+replacement rollback, minimal request construction, app-server wire behavior,
+HTTP validation, Responses, Chat and image mapping, SSE lifecycle ordering,
+usage, and function-call correlation.
 
 For a live, logged-in API process:
 

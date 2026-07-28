@@ -32,19 +32,26 @@ codex-model-provider-info = { workspace = true }
 codex-models-manager = { workspace = true }
 codex-protocol = { workspace = true }
 constant_time_eq = { workspace = true }
+fd-lock = { workspace = true }
+flate2 = { workspace = true }
 http = { workspace = true }
+reqwest = { workspace = true, features = ["json", "stream"] }
+semver = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
+sha2 = { workspace = true }
+tar = { workspace = true }
+tempfile = { workspace = true }
 tokio = { workspace = true, features = [
     "macros",
     "net",
+    "process",
     "rt-multi-thread",
     "signal",
     "sync",
     "time",
 ] }
+zip = { workspace = true }
 
 [dev-dependencies]
 pretty_assertions = { workspace = true }
-reqwest = { workspace = true, features = ["json", "stream"] }
-tempfile = { workspace = true }

@@ -593,6 +593,30 @@ fn unix_millis() -> u128 {
 }
 
 async fn shutdown_signal() {
+    #[cfg(unix)]
+    {
+        let mut terminate =
+            match tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate()) {
+                Ok(signal) => signal,
+                Err(error) => {
+                    eprintln!("Raw API SIGTERM listener failed: {error}");
+                    if let Err(error) = tokio::signal::ctrl_c().await {
+                        eprintln!("Raw API shutdown listener failed: {error}");
+                    }
+                    return;
+                }
+            };
+        tokio::select! {
+            result = tokio::signal::ctrl_c() => {
+                if let Err(error) = result {
+                    eprintln!("Raw API shutdown listener failed: {error}");
+                }
+            }
+            _ = terminate.recv() => {}
+        }
+    }
+
+    #[cfg(not(unix))]
     if let Err(error) = tokio::signal::ctrl_c().await {
         eprintln!("Raw API shutdown listener failed: {error}");
     }

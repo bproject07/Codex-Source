@@ -13,6 +13,7 @@ use super::RawCli;
 use super::RawCommand;
 use super::claim_raw_home;
 use super::ensure_not_protected;
+use super::prepare_command_raw_home;
 use super::runtime::RawApiRequest;
 use super::runtime::ResolvedRawModel;
 use super::runtime::build_api_request;
@@ -132,6 +133,27 @@ fn api_server_is_a_real_subcommand() {
             api_token: _,
         } if listen.to_string() == "0.0.0.0:0"
     ));
+}
+
+#[test]
+fn update_check_is_a_real_subcommand() {
+    let cli =
+        RawCli::try_parse_from(["codex-raw", "update", "--check"]).expect("parse update check");
+
+    assert!(matches!(cli.command, RawCommand::Update { check: true }));
+}
+
+#[test]
+fn update_check_does_not_prepare_or_claim_a_raw_home() {
+    let parent = tempdir().expect("temporary parent");
+    let unclaimed = parent.path().join("must-remain-unclaimed");
+    let command = RawCommand::Update { check: true };
+
+    let raw_home =
+        prepare_command_raw_home(&command, Some(unclaimed.clone())).expect("skip Raw home");
+
+    assert_eq!(raw_home, None);
+    assert!(!unclaimed.exists());
 }
 
 #[test]

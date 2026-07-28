@@ -3826,13 +3826,19 @@ dependencies = [
  "codex-models-manager",
  "codex-protocol",
  "constant_time_eq",
+ "fd-lock",
+ "flate2",
  "http 1.4.0",
  "pretty_assertions",
  "reqwest 0.12.28",
+ "semver",
  "serde",
  "serde_json",
+ "sha2 0.10.9",
+ "tar",
  "tempfile",
  "tokio",
+ "zip",
 ]
 
 [[package]]

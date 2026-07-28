@@ -260,6 +260,51 @@ install -m 0755 target/release/codex-raw "$HOME/.local/bin/codex-raw"
 Ensure `$HOME/.local/bin` is on your user `PATH`. This installation does not
 touch a system or user `codex` executable.
 
+### Update the installed binary
+
+Check the current version and look for a newer stable release:
+
+```shell
+codex-raw --version
+codex-raw update --check
+```
+
+Install the verified platform binary from this repository's latest immutable
+GitHub release:
+
+```shell
+codex-raw update
+```
+
+For a root-owned Linux installation, use `sudo codex-raw update`. Linux x64 and
+ARM64, Windows x64, and macOS Intel release binaries are supported. The updater
+requires an exact stable SemVer release from `bproject07/Codex-Source`, verifies
+both GitHub's SHA-256 asset digest and the exact `SHA256SUMS` entry, stages and
+checks the new binary, and retains the previous binary as a rollback backup.
+It refuses same-version installs, downgrades, draft/prerelease releases, and
+releases that GitHub does not mark immutable.
+
+On Windows, a detached helper proves that it owns the same updater byte-range
+lock before the parent exits. It uses Windows Restart Manager to request a
+graceful shutdown only from processes whose identity and full image path match
+the exact installed `codex-raw.exe`; it never force-kills or kills by name. All
+waits are bounded and failures leave the update closed, with a status file for
+diagnosis. After verification, Restart Manager restarts eligible registered
+processes and services; a restart is also attempted after replacement failure
+or rollback, and restart errors are reported. On Linux, an active
+`codex-raw-api.service` is stopped and restarted only when its `MainPID` is
+verified to use the exact binary being updated. If startup or verification
+fails, Raw attempts a best-effort rollback only after safely stopping the
+failed service; rollback or recovery errors are reported. Enable immutable
+releases in the public repository before publishing updater-compatible releases.
+
+Self-update is available from `codex-raw 0.1.0` onward. Any pre-`0.1.0`
+installation, including one reporting `0.0.0`, needs one manual verified
+replacement with an updater-enabled release. Until the public repository contains its first
+immutable release and exact platform assets, only the local selection,
+checksum, extraction, replacement, and rollback tests can run; a real GitHub
+fetch cannot be claimed as an end-to-end update test.
+
 ### Verify that the standard Codex installation is unchanged
 
 The build creates only `target/release/codex-raw` (or

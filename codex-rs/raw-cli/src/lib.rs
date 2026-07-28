@@ -41,6 +41,7 @@ mod api_server_wire_validation;
 mod app_server;
 mod app_server_wire;
 mod runtime;
+mod update;
 
 const RAW_HOME_DIR_NAME: &str = ".codex-raw";
 const RAW_HOME_MARKER: &str = ".codex-raw-home";
@@ -49,6 +50,8 @@ const PROTECTED_CODEX_HOME_DIR_NAMES: [&str; 3] = [".codex", ".codex2", ".codex-
 const RAW_AFTER_HELP: &str = r#"Examples:
   codex-raw login
   codex-raw status
+  codex-raw update --check
+  codex-raw update
   codex-raw -m gpt-5.4-mini send "Explain this error"
   codex-raw api-server --listen 127.0.0.1:8080
   codex-raw api-server --listen 0.0.0.0:8080 --api-token TOKEN
@@ -140,6 +143,13 @@ enum RawCommand {
     /// Show the Raw login status.
     Status,
 
+    /// Check for or install the latest verified stable Codex Raw release.
+    Update {
+        /// Only report whether an update is available; do not write files or stop services.
+        #[arg(long)]
+        check: bool,
+    },
+
     /// Send a minimal, stateless prompt.
     Send {
         #[arg(required = true, value_name = "PROMPT")]
@@ -181,21 +191,46 @@ pub async fn run() -> Result<()> {
 
 async fn run_with_args(args: impl IntoIterator<Item = OsString>) -> Result<()> {
     let cli = RawCli::parse_from(args);
-    let raw_home = prepare_raw_home(cli.home)?;
+    let raw_home = prepare_command_raw_home(&cli.command, cli.home)?;
 
     match cli.command {
-        RawCommand::Login => login(&raw_home).await,
-        RawCommand::Logout => logout(&raw_home).await,
-        RawCommand::Status => status(&raw_home).await,
-        RawCommand::Send { prompt } => send(&raw_home, cli.model, prompt.join(" ")).await,
-        RawCommand::AppServer => app_server::run(&raw_home, cli.model).await,
+        RawCommand::Update { check } => {
+            let mode = if check {
+                update::UpdateMode::CheckOnly
+            } else {
+                update::UpdateMode::Install
+            };
+            update::run(mode).await
+        }
+        RawCommand::Login => login(raw_home.as_deref().context("Raw home was not prepared")?).await,
+        RawCommand::Logout => {
+            logout(raw_home.as_deref().context("Raw home was not prepared")?).await
+        }
+        RawCommand::Status => {
+            status(raw_home.as_deref().context("Raw home was not prepared")?).await
+        }
+        RawCommand::Send { prompt } => {
+            send(
+                raw_home.as_deref().context("Raw home was not prepared")?,
+                cli.model,
+                prompt.join(" "),
+            )
+            .await
+        }
+        RawCommand::AppServer => {
+            app_server::run(
+                raw_home.as_deref().context("Raw home was not prepared")?,
+                cli.model,
+            )
+            .await
+        }
         RawCommand::ApiServer {
             listen,
             max_concurrency,
             api_token,
         } => {
             api_server::run(
-                &raw_home,
+                raw_home.as_deref().context("Raw home was not prepared")?,
                 cli.model,
                 api_server::ApiServerOptions {
                     listen,
@@ -211,8 +246,24 @@ async fn run_with_args(args: impl IntoIterator<Item = OsString>) -> Result<()> {
                 .map(|value| value.to_string_lossy().into_owned())
                 .collect::<Vec<_>>()
                 .join(" ");
-            send(&raw_home, cli.model, prompt).await
+            send(
+                raw_home.as_deref().context("Raw home was not prepared")?,
+                cli.model,
+                prompt,
+            )
+            .await
         }
+    }
+}
+
+fn prepare_command_raw_home(
+    command: &RawCommand,
+    requested: Option<PathBuf>,
+) -> Result<Option<PathBuf>> {
+    if matches!(command, RawCommand::Update { .. }) {
+        Ok(None)
+    } else {
+        prepare_raw_home(requested).map(Some)
     }
 }
 

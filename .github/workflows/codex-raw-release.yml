@@ -23,6 +23,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     outputs:
+      commit: ${{ steps.source.outputs.commit }}
       version: ${{ steps.version.outputs.version }}
 
     steps:
@@ -33,6 +34,7 @@ jobs:
           persist-credentials: false
 
       - name: Verify tag commit is on main
+        id: source
         shell: bash
         run: |
           set -euo pipefail
@@ -66,6 +68,8 @@ jobs:
             echo '::error::Release tag must point to a commit reachable from origin/main'
             exit 1
           }
+
+          echo "commit=$tagged_commit" >> "$GITHUB_OUTPUT"
 
       - name: Install Rust 1.95.0
         uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
@@ -121,6 +125,9 @@ jobs:
           - os: ubuntu-24.04
             target: x86_64-unknown-linux-gnu
             archive: tar.gz
+          - os: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+            archive: tar.gz
           - os: windows-2025
             target: x86_64-pc-windows-msvc
             archive: zip
@@ -138,6 +145,17 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
+
+      - name: Verify native Linux ARM64 runner
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          [[ "$RUNNER_OS" == 'Linux' && "$RUNNER_ARCH" == 'ARM64' && "$(uname -m)" == 'aarch64' ]] || {
+            echo '::error::Linux ARM64 releases must be built on a native GitHub-hosted ARM64 runner'
+            exit 1
+          }
 
       - name: Install Rust 1.95.0
         uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
@@ -192,9 +210,144 @@ jobs:
     permissions:
       contents: write
     env:
+      ORIGINAL_GITHUB_SHA: ${{ github.sha }}
       RELEASE_VERSION: ${{ needs.validate.outputs.version }}
+      VALIDATED_COMMIT: ${{ needs.validate.outputs.commit }}
 
     steps:
+      - name: Verify immutable release gate
+        shell: bash
+        env:
+          IMMUTABLE_RELEASES_GATE: ${{ vars.CODEX_RAW_IMMUTABLE_RELEASES }}
+        run: |
+          set -euo pipefail
+
+          [[ "$GITHUB_REPOSITORY" == 'bproject07/Codex-Source' ]] || {
+            echo '::error::Repository guard failed'
+            exit 1
+          }
+          [[ "$GITHUB_REF_TYPE" == 'tag' ]] || {
+            echo '::error::Release ref must be a tag'
+            exit 1
+          }
+          [[ "$GITHUB_REF_NAME" == "codex-raw-v${RELEASE_VERSION}" ]] || {
+            echo '::error::Validated version no longer matches the release tag'
+            exit 1
+          }
+
+          [[ "$IMMUTABLE_RELEASES_GATE" == 'enabled' ]] || {
+            echo '::error::Enable release immutability, then set CODEX_RAW_IMMUTABLE_RELEASES=enabled'
+            exit 1
+          }
+
+      - name: Prepare exact release-tag verifier
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cat > "$RUNNER_TEMP/verify-codex-raw-release-tag.sh" <<'BASH'
+          #!/usr/bin/env bash
+          set -euo pipefail
+
+          readonly phase="${1:?verification phase is required}"
+          readonly expected_repository='bproject07/Codex-Source'
+          readonly expected_ref="refs/tags/${GITHUB_REF_NAME}"
+          readonly api_version='2026-03-10'
+          readonly max_tag_depth=8
+
+          fail() {
+            echo "::error::Release tag verification failed during ${phase}: $*" >&2
+            exit 1
+          }
+
+          [[ "$GITHUB_REPOSITORY" == "$expected_repository" ]] ||
+            fail "unexpected repository $GITHUB_REPOSITORY"
+          [[ "$GITHUB_REF_TYPE" == 'tag' ]] ||
+            fail "the workflow ref is not a tag"
+          [[ "$VALIDATED_COMMIT" =~ ^[0-9a-f]{40}$ ]] ||
+            fail 'the validated commit is not a full SHA-1'
+          [[ "$ORIGINAL_GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]] ||
+            fail 'the original GITHUB_SHA is not a full SHA-1'
+          [[ "$VALIDATED_COMMIT" == "$ORIGINAL_GITHUB_SHA" ]] ||
+            fail "validated commit $VALIDATED_COMMIT differs from original GITHUB_SHA $ORIGINAL_GITHUB_SHA"
+
+          read_exact_ref() {
+            local ref_json
+            if ! ref_json="$(
+              gh api \
+                --method GET \
+                --header 'Accept: application/vnd.github+json' \
+                --header "X-GitHub-Api-Version: ${api_version}" \
+                "repos/${GITHUB_REPOSITORY}/git/ref/tags/${GITHUB_REF_NAME}"
+            )"; then
+              fail "cannot fetch the exact remote tag ${expected_ref}"
+            fi
+            jq -e \
+              --arg ref "$expected_ref" \
+              '
+                type == "object" and
+                .ref == $ref and
+                (.object | type == "object") and
+                (.object.type == "commit" or .object.type == "tag") and
+                (.object.sha | type == "string") and
+                (.object.sha | test("^[0-9a-f]{40}$"))
+              ' <<< "$ref_json" > /dev/null ||
+              fail "remote tag lookup was missing, ambiguous, or malformed for ${expected_ref}"
+            printf '%s\n' "$ref_json"
+          }
+
+          initial_ref_json="$(read_exact_ref)"
+          initial_type="$(jq -er '.object.type' <<< "$initial_ref_json")"
+          initial_sha="$(jq -er '.object.sha' <<< "$initial_ref_json")"
+          object_type="$initial_type"
+          object_sha="$initial_sha"
+          depth=0
+
+          while [[ "$object_type" == 'tag' ]]; do
+            ((depth < max_tag_depth)) ||
+              fail "annotated tag chain exceeds ${max_tag_depth} objects"
+            depth=$((depth + 1))
+            if ! tag_json="$(
+              gh api \
+                --method GET \
+                --header 'Accept: application/vnd.github+json' \
+                --header "X-GitHub-Api-Version: ${api_version}" \
+                "repos/${GITHUB_REPOSITORY}/git/tags/${object_sha}"
+            )"; then
+              fail "cannot fetch annotated tag object ${object_sha}"
+            fi
+            jq -e \
+              --arg sha "$object_sha" \
+              '
+                type == "object" and
+                .sha == $sha and
+                (.object | type == "object") and
+                (.object.type == "commit" or .object.type == "tag") and
+                (.object.sha | type == "string") and
+                (.object.sha | test("^[0-9a-f]{40}$"))
+              ' <<< "$tag_json" > /dev/null ||
+              fail "annotated tag object ${object_sha} is malformed or does not lead to a commit"
+            object_type="$(jq -er '.object.type' <<< "$tag_json")"
+            object_sha="$(jq -er '.object.sha' <<< "$tag_json")"
+          done
+
+          [[ "$object_type" == 'commit' ]] ||
+            fail "remote tag resolves to unsupported object type ${object_type}"
+
+          final_ref_json="$(read_exact_ref)"
+          final_type="$(jq -er '.object.type' <<< "$final_ref_json")"
+          final_sha="$(jq -er '.object.sha' <<< "$final_ref_json")"
+          [[ "$final_type" == "$initial_type" && "$final_sha" == "$initial_sha" ]] ||
+            fail 'remote tag changed while it was being resolved'
+          [[ "$object_sha" == "$VALIDATED_COMMIT" ]] ||
+            fail "remote tag resolves to $object_sha instead of validated commit $VALIDATED_COMMIT"
+          [[ "$object_sha" == "$ORIGINAL_GITHUB_SHA" ]] ||
+            fail "remote tag resolves to $object_sha instead of original GITHUB_SHA $ORIGINAL_GITHUB_SHA"
+
+          echo "Verified ${expected_ref} at ${object_sha} during ${phase}."
+          BASH
+          chmod 0700 "$RUNNER_TEMP/verify-codex-raw-release-tag.sh"
+
       - name: Download release archives
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -208,10 +361,11 @@ jobs:
           set -euo pipefail
 
           readonly base="codex-raw-${RELEASE_VERSION}"
-          readonly linux="${base}-x86_64-unknown-linux-gnu.tar.gz"
+          readonly linux_x64="${base}-x86_64-unknown-linux-gnu.tar.gz"
+          readonly linux_arm64="${base}-aarch64-unknown-linux-gnu.tar.gz"
           readonly windows="${base}-x86_64-pc-windows-msvc.zip"
           readonly macos="${base}-x86_64-apple-darwin.tar.gz"
-          readonly expected=("$linux" "$windows" "$macos")
+          readonly expected=("$linux_x64" "$linux_arm64" "$windows" "$macos")
 
           for archive in "${expected[@]}"; do
             [[ -f "release-assets/$archive" ]] || {
@@ -230,10 +384,11 @@ jobs:
 
           (
             cd release-assets
-            sha256sum "$linux" "$windows" "$macos" > SHA256SUMS
+            sha256sum "${expected[@]}" > SHA256SUMS
+            sha256sum --check --strict SHA256SUMS
           )
 
-      - name: Create GitHub release
+      - name: Create draft GitHub release
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -253,16 +408,249 @@ jobs:
             exit 1
           }
 
+          "$RUNNER_TEMP/verify-codex-raw-release-tag.sh" 'before draft creation'
+
           release_args=(
             "$GITHUB_REF_NAME"
-            release-assets/*
             --repo "$GITHUB_REPOSITORY"
             --verify-tag
+            --draft
             --title "codex-raw ${RELEASE_VERSION}"
             --generate-notes
           )
-          if [[ "$RELEASE_VERSION" == *-* ]]; then
+          readonly release_precedence="${RELEASE_VERSION%%+*}"
+          if [[ "$release_precedence" == *-* ]]; then
             release_args+=(--prerelease)
           fi
 
           gh release create "${release_args[@]}"
+
+      - name: Upload exact draft release assets
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          [[ "$GITHUB_REPOSITORY" == 'bproject07/Codex-Source' ]] || {
+            echo '::error::Repository guard failed'
+            exit 1
+          }
+          [[ "$GITHUB_REF_TYPE" == 'tag' ]] || {
+            echo '::error::Release ref must be a tag'
+            exit 1
+          }
+          [[ "$GITHUB_REF_NAME" == "codex-raw-v${RELEASE_VERSION}" ]] || {
+            echo '::error::Validated version no longer matches the release tag'
+            exit 1
+          }
+
+          readonly base="codex-raw-${RELEASE_VERSION}"
+          readonly assets=(
+            "release-assets/${base}-x86_64-unknown-linux-gnu.tar.gz"
+            "release-assets/${base}-aarch64-unknown-linux-gnu.tar.gz"
+            "release-assets/${base}-x86_64-pc-windows-msvc.zip"
+            "release-assets/${base}-x86_64-apple-darwin.tar.gz"
+            'release-assets/SHA256SUMS'
+          )
+
+          [[ "$(
+            gh release view "$GITHUB_REF_NAME" \
+              --repo "$GITHUB_REPOSITORY" \
+              --json isDraft \
+              --jq '.isDraft'
+          )" == 'true' ]] || {
+            echo '::error::Release must remain a draft while assets are uploaded'
+            exit 1
+          }
+
+          for asset in "${assets[@]}"; do
+            [[ -f "$asset" ]] || {
+              echo "::error::Missing local release asset: $asset"
+              exit 1
+            }
+          done
+
+          gh release upload "$GITHUB_REF_NAME" "${assets[@]}" \
+            --repo "$GITHUB_REPOSITORY"
+
+      - name: Verify draft assets and publish immutable release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          [[ "$GITHUB_REPOSITORY" == 'bproject07/Codex-Source' ]] || {
+            echo '::error::Repository guard failed'
+            exit 1
+          }
+          [[ "$GITHUB_REF_TYPE" == 'tag' ]] || {
+            echo '::error::Release ref must be a tag'
+            exit 1
+          }
+          [[ "$GITHUB_REF_NAME" == "codex-raw-v${RELEASE_VERSION}" ]] || {
+            echo '::error::Validated version no longer matches the release tag'
+            exit 1
+          }
+
+          readonly base="codex-raw-${RELEASE_VERSION}"
+          readonly assets=(
+            "release-assets/${base}-x86_64-unknown-linux-gnu.tar.gz"
+            "release-assets/${base}-aarch64-unknown-linux-gnu.tar.gz"
+            "release-assets/${base}-x86_64-pc-windows-msvc.zip"
+            "release-assets/${base}-x86_64-apple-darwin.tar.gz"
+            'release-assets/SHA256SUMS'
+          )
+          readonly release_precedence="${RELEASE_VERSION%%+*}"
+          expected_prerelease='false'
+          if [[ "$release_precedence" == *-* ]]; then
+            expected_prerelease='true'
+          fi
+          readonly expected_prerelease
+
+          declare -A expected_sizes
+          declare -A expected_digests
+          for asset in "${assets[@]}"; do
+            asset_name="${asset##*/}"
+            expected_sizes["$asset_name"]="$(stat --format='%s' "$asset")"
+            [[ "${expected_sizes[$asset_name]}" -gt 0 ]] || {
+              echo "::error::Local release asset is empty: $asset_name"
+              exit 1
+            }
+            expected_digests["$asset_name"]="sha256:$(
+              sha256sum "$asset" | cut -d ' ' -f 1
+            )"
+          done
+
+          verify_draft_assets() {
+            local release_json="$1"
+            local remote_asset_count
+            local asset
+            local asset_name
+            local asset_json
+            local asset_state
+            local remote_size
+            local remote_digest
+
+            jq -e \
+              --arg tag "$GITHUB_REF_NAME" \
+              --arg name "codex-raw ${RELEASE_VERSION}" \
+              --argjson prerelease "$expected_prerelease" \
+              '
+                .tag_name == $tag and
+                .name == $name and
+                .draft == true and
+                .prerelease == $prerelease and
+                .immutable == false
+              ' <<< "$release_json" > /dev/null || return 1
+
+            remote_asset_count="$(
+              jq -er '.assets | length' <<< "$release_json"
+            )" || return 1
+            [[ "$remote_asset_count" -eq "${#assets[@]}" ]] || return 1
+
+            for asset in "${assets[@]}"; do
+              asset_name="${asset##*/}"
+              asset_json="$(
+                jq -cer \
+                  --arg name "$asset_name" \
+                  '
+                    [.assets[] | select(.name == $name)] |
+                    if length == 1 then .[0]
+                    else error("expected exactly one matching release asset")
+                    end
+                  ' <<< "$release_json"
+              )" || return 1
+
+              asset_state="$(jq -er '.state' <<< "$asset_json")" || return 1
+              [[ "$asset_state" == 'uploaded' ]] || return 1
+
+              remote_size="$(jq -er '.size' <<< "$asset_json")" || return 1
+              [[ "$remote_size" == "${expected_sizes[$asset_name]}" ]] ||
+                return 1
+
+              remote_digest="$(jq -er '.digest' <<< "$asset_json")" || return 1
+              [[ "$remote_digest" == "${expected_digests[$asset_name]}" ]] ||
+                return 1
+            done
+          }
+
+          readonly max_attempts=10
+          verified='false'
+          release_json=''
+          for ((attempt = 1; attempt <= max_attempts; attempt++)); do
+            release_json="$(
+              gh api \
+                --method GET \
+                --header 'Accept: application/vnd.github+json' \
+                --header 'X-GitHub-Api-Version: 2026-03-10' \
+                "repos/${GITHUB_REPOSITORY}/releases/tags/${GITHUB_REF_NAME}"
+            )" || true
+
+            if [[ -n "$release_json" ]] &&
+              verify_draft_assets "$release_json"; then
+              verified='true'
+              break
+            fi
+
+            if [[ "$attempt" -lt "$max_attempts" ]]; then
+              echo "::warning::Draft asset metadata is not ready (attempt $attempt/$max_attempts)"
+              sleep 3
+            fi
+          done
+
+          [[ "$verified" == 'true' ]] || {
+            echo '::error::Draft assets failed exact name, state, size, or digest verification'
+            exit 1
+          }
+
+          "$RUNNER_TEMP/verify-codex-raw-release-tag.sh" 'immediately before publication'
+
+          gh release edit "$GITHUB_REF_NAME" \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --draft=false
+
+          published_json="$(
+            gh api \
+              --method GET \
+              --header 'Accept: application/vnd.github+json' \
+              --header 'X-GitHub-Api-Version: 2026-03-10' \
+              "repos/${GITHUB_REPOSITORY}/releases/tags/${GITHUB_REF_NAME}"
+          )"
+          readonly published_json
+
+          if jq -e \
+            --arg tag "$GITHUB_REF_NAME" \
+            --argjson asset_count "${#assets[@]}" \
+            '
+              .tag_name == $tag and
+              .draft == false and
+              .immutable == true and
+              (.published_at | type == "string") and
+              (.assets | length) == $asset_count
+            ' <<< "$published_json" > /dev/null; then
+            "$RUNNER_TEMP/verify-codex-raw-release-tag.sh" 'after immutable publication'
+            exit 0
+          fi
+
+          if jq -e \
+            --arg tag "$GITHUB_REF_NAME" \
+            '
+              .tag_name == $tag and
+              .draft == false and
+              .immutable == false
+            ' <<< "$published_json" > /dev/null; then
+            gh release delete "$GITHUB_REF_NAME" \
+              --repo "$GITHUB_REPOSITORY" \
+              --yes || {
+                echo '::error::Mutable release detected but automatic deletion failed'
+                exit 1
+              }
+            echo '::error::Mutable release deleted; tag retained. Enable immutability and re-run all jobs'
+            exit 1
+          fi
+
+          echo '::error::Published release identity, assets, or immutability could not be verified'
+          exit 1
