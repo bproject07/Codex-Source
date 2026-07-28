@@ -31,9 +31,11 @@ the ruleset also closes the unavoidable API check-to-publish race window.
 
 The workflow then follows GitHub's immutable-release guidance: it creates a
 draft, packages the platform binary with the version-matched public Markdown
-guides and policies, uploads exactly the four archives plus `SHA256SUMS`,
-verifies every draft asset's name, state, size, and SHA-256 digest, and only
-then publishes the draft. It also checks GitHub's real `immutable` field after
+guides, benchmark report, and policies, uploads exactly the four archives plus
+`SHA256SUMS`, verifies every draft asset's name, state, size, and SHA-256
+digest, and only then publishes the draft. Draft verification uses the
+release's numeric ID because GitHub's REST tag endpoint does not expose draft
+releases. The workflow also checks GitHub's real `immutable` field after
 publication.
 
 If the gate was set incorrectly and GitHub reports a mutable release, the
