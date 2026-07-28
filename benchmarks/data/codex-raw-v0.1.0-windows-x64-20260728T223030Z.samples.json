@@ -1,0 +1,209 @@
+{
+  "schema": "codex-raw-benchmark-samples-v1",
+  "warmup_turns_completed": 2,
+  "warmup_samples_retained": false,
+  "measured_turns": 20,
+  "ordering": "one app-server and one api-server per pair; first mode alternates",
+  "samples": [
+    {
+      "sequence": 1,
+      "pair": 1,
+      "mode": "app-server",
+      "ttft_ms": 708.7867,
+      "total_ms": 756.1584,
+      "input_tokens": 7,
+      "output_chars": 32,
+      "output_sha256": "fda564ba3f7a0f028106d468420f674898ed99ac5bf2765ac9586206e39d73c5"
+    },
+    {
+      "sequence": 2,
+      "pair": 1,
+      "mode": "api-server",
+      "ttft_ms": 947.0718,
+      "total_ms": 1165.7099,
+      "input_tokens": 7,
+      "output_chars": 32,
+      "output_sha256": "fda564ba3f7a0f028106d468420f674898ed99ac5bf2765ac9586206e39d73c5"
+    },
+    {
+      "sequence": 3,
+      "pair": 2,
+      "mode": "api-server",
+      "ttft_ms": 2024.1807,
+      "total_ms": 2251.1091,
+      "input_tokens": 7,
+      "output_chars": 32,
+      "output_sha256": "fda564ba3f7a0f028106d468420f674898ed99ac5bf2765ac9586206e39d73c5"
+    },
+    {
+      "sequence": 4,
+      "pair": 2,
+      "mode": "app-server",
+      "ttft_ms": 807.5447,
+      "total_ms": 1018.1655,
+      "input_tokens": 7,
+      "output_chars": 32,
+      "output_sha256": "fda564ba3f7a0f028106d468420f674898ed99ac5bf2765ac9586206e39d73c5"
+    },
+    {
+      "sequence": 5,
+      "pair": 3,
+      "mode": "app-server",
+      "ttft_ms": 694.6809,
+      "total_ms": 894.557,
+      "input_tokens": 7,
+      "output_chars": 32,
+      "output_sha256": "fda564ba3f7a0f028106d468420f674898ed99ac5bf2765ac9586206e39d73c5"
+    },
+    {
+      "sequence": 6,
+      "pair": 3,
+      "mode": "api-server",
+      "ttft_ms": 663.4795,
+      "total_ms": 910.3116,
+      "input_tokens": 7,
+      "output_chars": 32,
+      "output_sha256": "fda564ba3f7a0f028106d468420f674898ed99ac5bf2765ac9586206e39d73c5"
+    },
+    {
+      "sequence": 7,
+      "pair": 4,
+      "mode": "api-server",
+      "ttft_ms": 690.0856,
+      "total_ms": 773.666,
+      "input_tokens": 7,
+      "output_chars": 32,
+      "output_sha256": "fda564ba3f7a0f028106d468420f674898ed99ac5bf2765ac9586206e39d73c5"
+    },
+    {
+      "sequence": 8,
+      "pair": 4,
+      "mode": "app-server",
+      "ttft_ms": 857.322,
+      "total_ms": 1000.9105,
+      "input_tokens": 7,
+      "output_chars": 32,
+      "output_sha256": "fda564ba3f7a0f028106d468420f674898ed99ac5bf2765ac9586206e39d73c5"
+    },
+    {
+      "sequence": 9,
+      "pair": 5,
+      "mode": "app-server",
+      "ttft_ms": 610.3375,
+      "total_ms": 794.6267,
+      "input_tokens": 7,
+      "output_chars": 32,
+      "output_sha256": "fda564ba3f7a0f028106d468420f674898ed99ac5bf2765ac9586206e39d73c5"
+    },
+    {
+      "sequence": 10,
+      "pair": 5,
+      "mode": "api-server",
+      "ttft_ms": 628.9546,
+      "total_ms": 968.1251,
+      "input_tokens": 7,
+      "output_chars": 32,
+      "output_sha256": "fda564ba3f7a0f028106d468420f674898ed99ac5bf2765ac9586206e39d73c5"
+    },
+    {
+      "sequence": 11,
+      "pair": 6,
+      "mode": "api-server",
+      "ttft_ms": 600.1921,
+      "total_ms": 745.5393,
+      "input_tokens": 7,
+      "output_chars": 32,
+      "output_sha256": "fda564ba3f7a0f028106d468420f674898ed99ac5bf2765ac9586206e39d73c5"
+    },
+    {
+      "sequence": 12,
+      "pair": 6,
+      "mode": "app-server",
+      "ttft_ms": 786.2617,
+      "total_ms": 1047.7081,
+      "input_tokens": 7,
+      "output_chars": 32,
+      "output_sha256": "fda564ba3f7a0f028106d468420f674898ed99ac5bf2765ac9586206e39d73c5"
+    },
+    {
+      "sequence": 13,
+      "pair": 7,
+      "mode": "app-server",
+      "ttft_ms": 969.1422,
+      "total_ms": 1125.31,
+      "input_tokens": 7,
+      "output_chars": 29,
+      "output_sha256": "271973d4979a0bdfa021f64bf7cc98f77eeffd101b3d1fbcaaf178c4b061b62f"
+    },
+    {
+      "sequence": 14,
+      "pair": 7,
+      "mode": "api-server",
+      "ttft_ms": 645.0233,
+      "total_ms": 871.9816,
+      "input_tokens": 7,
+      "output_chars": 32,
+      "output_sha256": "fda564ba3f7a0f028106d468420f674898ed99ac5bf2765ac9586206e39d73c5"
+    },
+    {
+      "sequence": 15,
+      "pair": 8,
+      "mode": "api-server",
+      "ttft_ms": 653.3175,
+      "total_ms": 728.8919,
+      "input_tokens": 7,
+      "output_chars": 32,
+      "output_sha256": "fda564ba3f7a0f028106d468420f674898ed99ac5bf2765ac9586206e39d73c5"
+    },
+    {
+      "sequence": 16,
+      "pair": 8,
+      "mode": "app-server",
+      "ttft_ms": 678.4323,
+      "total_ms": 878.9743,
+      "input_tokens": 7,
+      "output_chars": 32,
+      "output_sha256": "fda564ba3f7a0f028106d468420f674898ed99ac5bf2765ac9586206e39d73c5"
+    },
+    {
+      "sequence": 17,
+      "pair": 9,
+      "mode": "app-server",
+      "ttft_ms": 680.1771,
+      "total_ms": 913.6866,
+      "input_tokens": 7,
+      "output_chars": 32,
+      "output_sha256": "fda564ba3f7a0f028106d468420f674898ed99ac5bf2765ac9586206e39d73c5"
+    },
+    {
+      "sequence": 18,
+      "pair": 9,
+      "mode": "api-server",
+      "ttft_ms": 691.6509,
+      "total_ms": 876.2887,
+      "input_tokens": 7,
+      "output_chars": 32,
+      "output_sha256": "fda564ba3f7a0f028106d468420f674898ed99ac5bf2765ac9586206e39d73c5"
+    },
+    {
+      "sequence": 19,
+      "pair": 10,
+      "mode": "api-server",
+      "ttft_ms": 595.8831,
+      "total_ms": 802.0407,
+      "input_tokens": 7,
+      "output_chars": 32,
+      "output_sha256": "fda564ba3f7a0f028106d468420f674898ed99ac5bf2765ac9586206e39d73c5"
+    },
+    {
+      "sequence": 20,
+      "pair": 10,
+      "mode": "app-server",
+      "ttft_ms": 591.1272,
+      "total_ms": 777.0832,
+      "input_tokens": 7,
+      "output_chars": 32,
+      "output_sha256": "fda564ba3f7a0f028106d468420f674898ed99ac5bf2765ac9586206e39d73c5"
+    }
+  ]
+}

@@ -5,10 +5,34 @@
 > with, endorsed by, or supported by OpenAI. “OpenAI” and “Codex” are marks of
 > their respective owner.
 
-Codex Raw is a small, isolated client for sending caller-controlled requests
-through the ChatGPT/Codex model transport. It deliberately leaves out the
-standard Codex coding-agent prompt, built-in tools, repository discovery,
-conversation history, sandbox workflow, skills, plugins, and MCP context.
+## The core idea
+
+> [!IMPORTANT] > **Codex Raw removes the Codex agent layer—not the account controls.**
+>
+> It sends caller-controlled, stateless model requests without the standard
+> Codex agent prompt, built-in tools, repository or workspace discovery,
+> hidden project context, or conversation history.
+>
+> It authenticates through its own browser-based ChatGPT/Codex sign-in and can
+> expose that transport as a local OpenAI-compatible HTTP API. It is **not** an
+> official OpenAI API service, does not accept an OpenAI API key for upstream
+> authentication, and does not bypass model availability, account
+> entitlements, rate limits, safety controls, or platform policies.
+
+```text
+your prompt / local OpenAI-compatible request
+                        |
+                        v
+                    codex-raw
+(no agent prompt · no built-in tools · no repository context · no hidden history)
+                        |
+                        v
+       browser-authenticated ChatGPT/Codex account transport
+               (normal account controls still apply)
+                        |
+                        v
+                  model response
+```
 
 It ships as a separate executable named `codex-raw` and offers three ways to
 use the same minimal runtime:
@@ -22,13 +46,8 @@ use the same minimal runtime:
 [Download a release](https://github.com/bproject07/Codex-Source/releases) ·
 [Download source ZIP](https://github.com/bproject07/Codex-Source/archive/refs/heads/main.zip) ·
 [Installation guide](INSTALL.md) · [API guide](API.md) ·
-[Security policy](SECURITY.md) · [Changelog](CHANGELOG.md)
-
-> [!IMPORTANT]
-> Codex Raw uses its own browser-based ChatGPT sign-in. It is not an OpenAI API
-> service, does not accept an OpenAI API key for upstream authentication, and
-> does not bypass account entitlements, rate limits, safety controls, or
-> platform policies.
+[Benchmarks](BENCHMARKS.md) · [Security policy](SECURITY.md) ·
+[Changelog](CHANGELOG.md)
 
 ## Quick start
 
@@ -325,6 +344,8 @@ Use this map:
 - [INSTALL.md](INSTALL.md) — binaries, source builds, checksums, updates, and
   troubleshooting;
 - [API.md](API.md) — CLI, JSONL, HTTP, SDK, request, and security reference;
+- [BENCHMARKS.md](BENCHMARKS.md) — release-bound benchmark methodology,
+  results, and raw-sample requirements;
 - [codex-rs/raw-cli/README.md](codex-rs/raw-cli/README.md) — implementation
   invariants and maintainer notes;
 - [CHANGELOG.md](CHANGELOG.md) — fork release history;

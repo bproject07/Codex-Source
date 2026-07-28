@@ -9,6 +9,20 @@ and uses semantic versioning for the `codex-raw` executable.
 
 ## [Unreleased]
 
+### Added
+
+- A release-bound benchmark report with sanitized per-sample data and exact
+  release, commit, archive, binary, harness, environment, and methodology
+  provenance.
+
+### Changed
+
+- The README now explains the removed Codex agent layer and the retained
+  ChatGPT/Codex account controls near the top of the page.
+- Future release archives include `BENCHMARKS.md`.
+- Draft release verification now resolves the draft's numeric GitHub release
+  ID before using the REST API, whose tag endpoint does not expose drafts.
+
 ## [0.1.0] - 2026-07-29
 
 ### Added

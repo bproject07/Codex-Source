@@ -259,6 +259,7 @@ jobs:
           cp "codex-rs/target/${RELEASE_TARGET}/release/codex-raw" "dist/$bundle/"
           cp \
             API.md \
+            BENCHMARKS.md \
             CHANGELOG.md \
             CODE_OF_CONDUCT.md \
             CONTRIBUTING.md \
@@ -288,6 +289,7 @@ jobs:
           Copy-Item "codex-rs\target\$env:RELEASE_TARGET\release\codex-raw.exe" "dist\$bundle\"
           $rootDocs = @(
             "API.md"
+            "BENCHMARKS.md"
             "CHANGELOG.md"
             "CODE_OF_CONDUCT.md"
             "CONTRIBUTING.md"
@@ -650,6 +652,30 @@ jobs:
           fi
           readonly expected_prerelease
 
+          release_view_json="$(
+            gh release view "$GITHUB_REF_NAME" \
+              --repo "$GITHUB_REPOSITORY" \
+              --json databaseId,isDraft,isPrerelease,name,tagName
+          )"
+          readonly release_view_json
+          jq -e \
+            --arg tag "$GITHUB_REF_NAME" \
+            --arg name "codex-raw ${RELEASE_VERSION}" \
+            --argjson prerelease "$expected_prerelease" \
+            '
+              .tagName == $tag and
+              .name == $name and
+              .isDraft == true and
+              .isPrerelease == $prerelease and
+              (.databaseId | type == "number") and
+              .databaseId > 0
+            ' <<< "$release_view_json" > /dev/null || {
+              echo '::error::Could not resolve the exact draft release identity'
+              exit 1
+            }
+          release_id="$(jq -er '.databaseId' <<< "$release_view_json")"
+          readonly release_id
+
           declare -A expected_sizes
           declare -A expected_digests
           for asset in "${assets[@]}"; do
@@ -678,7 +704,9 @@ jobs:
               --arg tag "$GITHUB_REF_NAME" \
               --arg name "codex-raw ${RELEASE_VERSION}" \
               --argjson prerelease "$expected_prerelease" \
+              --argjson release_id "$release_id" \
               '
+                .id == $release_id and
                 .tag_name == $tag and
                 .name == $name and
                 .draft == true and
@@ -726,7 +754,7 @@ jobs:
                 --method GET \
                 --header 'Accept: application/vnd.github+json' \
                 --header 'X-GitHub-Api-Version: 2026-03-10' \
-                "repos/${GITHUB_REPOSITORY}/releases/tags/${GITHUB_REF_NAME}"
+                "repos/${GITHUB_REPOSITORY}/releases/${release_id}"
             )" || true
 
             if [[ -n "$release_json" ]] &&
@@ -758,14 +786,16 @@ jobs:
               --method GET \
               --header 'Accept: application/vnd.github+json' \
               --header 'X-GitHub-Api-Version: 2026-03-10' \
-              "repos/${GITHUB_REPOSITORY}/releases/tags/${GITHUB_REF_NAME}"
+              "repos/${GITHUB_REPOSITORY}/releases/${release_id}"
           )"
           readonly published_json
 
           if jq -e \
             --arg tag "$GITHUB_REF_NAME" \
             --argjson asset_count "${#assets[@]}" \
+            --argjson release_id "$release_id" \
             '
+              .id == $release_id and
               .tag_name == $tag and
               .draft == false and
               .immutable == true and
@@ -778,7 +808,9 @@ jobs:
 
           if jq -e \
             --arg tag "$GITHUB_REF_NAME" \
+            --argjson release_id "$release_id" \
             '
+              .id == $release_id and
               .tag_name == $tag and
               .draft == false and
               .immutable == false
