@@ -128,7 +128,8 @@ The client must reply with `{ decision: "allow" | "deny" }` for each request.
 
 ## Auth helpers
 
-For the complete request/response shapes and flow examples, see the [Auth endpoints (v2) section in the app-server README](../app-server/README.md#auth-endpoints-v2).
+For the complete request/response shapes and flow examples, see the
+[Auth endpoints section in the app-server README](../app-server/README.md#auth-endpoints).
 
 ## Legacy compatibility methods
 

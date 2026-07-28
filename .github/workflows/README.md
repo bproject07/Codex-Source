@@ -30,9 +30,12 @@ fail if the tag no longer points to the commit that triggered the workflow, but
 the ruleset also closes the unavoidable API check-to-publish race window.
 
 The workflow then follows GitHub's immutable-release guidance: it creates a
-draft, uploads exactly the four archives plus `SHA256SUMS`, verifies every
-draft asset's name, state, size, and SHA-256 digest, and only then publishes
-the draft. It also checks GitHub's real `immutable` field after publication.
+draft, packages the platform binary with the version-matched public Markdown
+guides and policies, uploads exactly the four archives plus `SHA256SUMS`,
+verifies every draft asset's name, state, size, and SHA-256 digest, and only
+then publishes the draft. It also checks GitHub's real `immutable` field after
+publication.
+
 If the gate was set incorrectly and GitHub reports a mutable release, the
 workflow immediately deletes only the release, retains the tag, and fails.
 Enable immutability and use **Re-run all jobs** for that workflow run. A

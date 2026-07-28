@@ -4,12 +4,20 @@
 client without entering the standard Codex agent/session pipeline. This file
 documents the implementation boundaries that maintainers must preserve.
 
+> [!NOTE]
+> This is the maintainer and implementation reference. New users should start
+> with the [project overview](../../README.md), then use the
+> [installation guide](../../INSTALL.md) and
+> [interface guide](../../API.md).
+
 ## Documentation contract
 
 Changes to commands, endpoints, wire fields, defaults, model controls,
-authentication, or network security must update this file, the root `README.md`,
-and the rendered help in `src/lib.rs` before the change series is published. Verify both
-`codex-raw --help` and `codex-raw api-server --help` before publishing a build.
+authentication, update behavior, or network security must update this file,
+the applicable public guide (`README.md`, `INSTALL.md`, or `API.md`), and the
+rendered help in `src/lib.rs` before the change series is published. Verify
+`codex-raw --help`, `codex-raw update --help`, and
+`codex-raw api-server --help` before publishing a build.
 
 ## Core invariants
 
@@ -32,25 +40,25 @@ Every change to this crate should preserve these properties:
 
 ## Source map
 
-| File | Responsibility |
-|---|---|
-| `src/lib.rs` | CLI parsing, command dispatch, login, logout, status, and Raw home ownership |
-| `src/update/` | Verified GitHub release lookup, bounded archive extraction, platform replacement, service health checks, and rollback |
-| `src/runtime.rs` | Shared auth manager, model manager, text/image transport, request construction, and stream normalization |
-| `src/app_server.rs` | JSONL process lifecycle, thread handles, and sequential turns |
-| `src/app_server_wire.rs` | Small app-server parsers and response/notification builders |
-| `src/api_server.rs` | Axum router, listen-scope warning, concurrency, and request execution |
-| `src/api_server_wire.rs` | Responses request parsing and public wire types |
-| `src/api_server_chat_wire.rs` | Chat message and tool translation into Responses items |
-| `src/api_server_image_wire.rs` | Image generation request validation and response mapping |
-| `src/api_server_response.rs` | Non-streaming Responses and Chat result mapping |
-| `src/api_server_stream.rs` | Typed Responses SSE lifecycle |
-| `src/api_server_chat_stream.rs` | Chat Completions chunks, usage, and `[DONE]` |
-| `src/api_server_http_stream.rs` | Upstream event adaptation for HTTP streaming |
-| `src/api_server_wire_validation.rs` | Function-call and function-output correlation |
-| `src/*_tests.rs` | Unit, wire, response, and streaming tests |
-| `scripts/openai_sdk_smoke.py` | Live OpenAI Python SDK compatibility check |
-| `scripts/benchmark_persistent.ps1` | Paired persistent app-server/API latency benchmark |
+| File                                | Responsibility                                                                                                        |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `src/lib.rs`                        | CLI parsing, command dispatch, login, logout, status, and Raw home ownership                                          |
+| `src/update/`                       | Verified GitHub release lookup, bounded archive extraction, platform replacement, service health checks, and rollback |
+| `src/runtime.rs`                    | Shared auth manager, model manager, text/image transport, request construction, and stream normalization              |
+| `src/app_server.rs`                 | JSONL process lifecycle, thread handles, and sequential turns                                                         |
+| `src/app_server_wire.rs`            | Small app-server parsers and response/notification builders                                                           |
+| `src/api_server.rs`                 | Axum router, listen-scope warning, concurrency, and request execution                                                 |
+| `src/api_server_wire.rs`            | Responses request parsing and public wire types                                                                       |
+| `src/api_server_chat_wire.rs`       | Chat message and tool translation into Responses items                                                                |
+| `src/api_server_image_wire.rs`      | Image generation request validation and response mapping                                                              |
+| `src/api_server_response.rs`        | Non-streaming Responses and Chat result mapping                                                                       |
+| `src/api_server_stream.rs`          | Typed Responses SSE lifecycle                                                                                         |
+| `src/api_server_chat_stream.rs`     | Chat Completions chunks, usage, and `[DONE]`                                                                          |
+| `src/api_server_http_stream.rs`     | Upstream event adaptation for HTTP streaming                                                                          |
+| `src/api_server_wire_validation.rs` | Function-call and function-output correlation                                                                         |
+| `src/*_tests.rs`                    | Unit, wire, response, and streaming tests                                                                             |
+| `scripts/openai_sdk_smoke.py`       | Live OpenAI Python SDK compatibility check                                                                            |
+| `scripts/benchmark_persistent.ps1`  | Paired persistent app-server/API latency benchmark                                                                    |
 
 ## CLI dispatch
 
@@ -81,7 +89,7 @@ codex-raw api-server --listen 127.0.0.1:8080 --max-concurrency 16
 `api-server` accepts `--api-token TOKEN` or `CODEX_RAW_API_TOKEN`. Prefer the
 environment variable because a CLI argument can be exposed in shell history and
 process listings. Tokens must contain 32-512 RFC 6750 bearer-token characters;
-use a cryptographically random value (the root README includes generation
+use a cryptographically random value (the public API guide includes generation
 commands). Raw never prints the configured token.
 
 `--model` is the default text model for one-shot, app-server, Responses, and
@@ -101,43 +109,45 @@ the single exact expected asset with an exact repository download URL and a
 GitHub SHA-256 digest. The downloaded archive must match both its GitHub digest
 and its exact `SHA256SUMS` entry. Extraction reads only the expected regular
 binary at the expected bundle path; it never unpacks arbitrary archive paths.
-The updater refuses same-version installs and downgrades.
+An equal SemVer precedence is reported as already up to date and is not
+reinstalled; a release older than the running binary is rejected.
 
-The candidate binary is staged beside the installed executable, made
+The candidate binary is staged in the detected installation layout, made
 executable where applicable, and required to report the release version before
-replacement. The previous executable is retained under a timestamped hidden
-backup name.
+replacement. Standalone installs retain a timestamped hidden backup; managed
+Unix installs retain the previous release directory.
 
 On Windows, the running executable cannot replace itself. Raw launches a
 detached helper, waits for it to open the shared lock file, releases its own
 byte-range lock, and exits only after the helper proves ownership of that exact
 range. The helper uses Restart Manager to request graceful shutdown only from
 processes whose identity and full image path match the exact installed
-`codex-raw.exe`. It never force-kills or kills by name. Every wait is bounded;
-on failure it stops closed, preserves recoverable artifacts, and writes the
-reported status file. After the new version is verified, Restart Manager
-restarts eligible registered processes and services. Raw also attempts that
-restart after replacement failure or rollback and includes restart errors in
-the status report.
+`codex-raw.exe`. It never force-kills a target Raw process or kills by name.
+The updater helper's lifecycle waits are bounded and failures are written to
+its status file. If replacement occurred and the new binary fails its version
+check, the helper attempts rollback. After a successful version check, Restart
+Manager attempts to restart eligible registered application processes; a
+restart failure can leave the verified new binary installed and is reported.
 
 On Linux, use `sudo codex-raw update` for a root-owned installation. If
 `codex-raw-api.service` is active, Raw verifies that its `MainPID` is executing
-the exact binary being updated before stopping it. The service receives
-SIGTERM and the API drains through graceful shutdown. Raw installs the
-candidate and starts the same unit. If startup or verification fails, Raw
-attempts a best-effort rollback only after safely stopping the failed service,
-and reports rollback or recovery errors. It never stops a differently owned
-unit or kills processes by name. Without that exact active unit, existing
-processes are left running and must be restarted manually.
+the exact binary being updated and that its command line contains
+`api-server`; a mismatch aborts the update. Raw requests `systemctl stop` and
+waits for the unit to become fully stopped, then installs the candidate and
+starts the same unit. If startup or verification fails, Raw attempts
+best-effort rollback only after safely stopping the failed service. If that
+safe stop fails, rollback is not attempted and recovery errors are reported.
+Raw does not kill processes by name. When the fixed unit is inactive, other
+running Unix processes are left alone and must be restarted manually.
 
 Repository owners must enable GitHub immutable releases. A mutable release is
 deliberately unusable by this updater.
 
-The updater first ships in `codex-raw 0.1.0`. Any pre-`0.1.0` installation,
-including one reporting `0.0.0`, requires one manual verified installation of
-an updater-enabled release. The GitHub fetch path can be tested end to end only
-after the public repository has a published immutable release with all exact
-assets; local tests do not pretend that such a release already exists.
+The current crate includes this updater. A build without the `update` command
+requires one manual verified replacement before it can self-update. The GitHub
+fetch path can be exercised end to end only against a published immutable
+release with all exact assets; local selection, archive, replacement, and
+rollback tests do not substitute for that live check.
 
 ## Raw home ownership
 
@@ -322,10 +332,10 @@ Raw deliberately implements a small, explicit subset of the OpenAI wire
 formats. Model/account capabilities still decide whether a forwarded setting is
 accepted upstream.
 
-| Endpoint | Supported fields and behavior |
-|---|---|
-| `/v1/responses` | `model`; required `input` string or supported text/reasoning/function-call item array; `instructions`; function `tools`; `tool_choice` = `none`, `auto`, or `required`; `parallel_tool_calls` (default `true`); `reasoning.effort`; non-empty `service_tier`; `stream` (default `false`); `store` omitted, `null`, or `false` |
-| `/v1/chat/completions` | `model`; non-empty text/function-tool-loop `messages`; function `tools`; `tool_choice` = `none`, `auto`, or `required`; `parallel_tool_calls` (default `true`); `reasoning_effort`; non-empty `service_tier`; `stream` (default `false`); `stream_options.include_usage` (default `false`); `n` omitted or `1`; `store` omitted, `null`, or `false` |
+| Endpoint                 | Supported fields and behavior                                                                                                                                                                                                                                                                                                                                           |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/v1/responses`          | `model`; required `input` string or supported text/reasoning/function-call item array; `instructions`; function `tools`; `tool_choice` = `none`, `auto`, or `required`; `parallel_tool_calls` (default `true`); `reasoning.effort`; non-empty `service_tier`; `stream` (default `false`); `store` omitted, `null`, or `false`                                           |
+| `/v1/chat/completions`   | `model`; non-empty text/function-tool-loop `messages`; function `tools`; `tool_choice` = `none`, `auto`, or `required`; `parallel_tool_calls` (default `true`); `reasoning_effort`; non-empty `service_tier`; `stream` (default `false`); `stream_options.include_usage` (default `false`); `n` omitted or `1`; `store` omitted, `null`, or `false`                     |
 | `/v1/images/generations` | required non-empty `prompt`; `model` (default `gpt-image-2`); `n` from 1 to 4; `quality` = `auto` (default), `low`, `medium`, or `high`; non-empty model-supported `size` such as `auto` (default), `1024x1024`, `1536x1024`, or `1024x1536`; `background` = `auto` (default), `opaque`, or `transparent` on supporting models; `response_format` omitted or `b64_json` |
 
 Known reasoning effort spellings are `none`, `minimal`, `low`, `medium`,
@@ -411,9 +421,7 @@ resolved `background`, `quality`, and `size`, plus:
 
 ```json
 {
-  "data": [
-    { "b64_json": "..." }
-  ]
+  "data": [{ "b64_json": "..." }]
 }
 ```
 
@@ -486,14 +494,17 @@ send the matching result back to the model.
 
 ## Testing
 
-Run the repository-prescribed checks from `codex-rs`:
+Run the non-mutating CI-aligned checks from `codex-rs`:
 
 ```shell
+cargo fmt --package codex-raw -- --config imports_granularity=Item --check
+cargo clippy --locked --package codex-raw --tests --no-deps -- -D warnings
 just test -p codex-raw
-just fix -p codex-raw
-just fmt
-cargo build --release -p codex-raw
+cargo build --locked --release --package codex-raw
 ```
+
+When changes need automatic cleanup, `just fix -p codex-raw` and `just fmt`
+mutate source files; review their diff before committing.
 
 The suite covers home isolation, verified release selection and extraction,
 replacement rollback, minimal request construction, app-server wire behavior,

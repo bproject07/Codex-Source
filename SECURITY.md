@@ -46,8 +46,8 @@ remains open. This is not per-user authorization, and the built-in server uses
 plain HTTP. For network use, place it behind a hardened reverse proxy that
 enforces TLS, connection/header timeouts, and connection limits; restrict the
 Raw port with a firewall and prevent direct public access. See the
-[Codex Raw security model](README.md#security-model) for the complete operating
-guidance.
+[Codex Raw security essentials](README.md#security-essentials) for the complete
+operating guidance.
 
 Users remain responsible for reviewing commands, protecting local state, and
 using sandbox, approval, and network controls appropriate to their environment.

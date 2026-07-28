@@ -158,7 +158,7 @@ fn update_check_does_not_prepare_or_claim_a_raw_home() {
 
 #[test]
 fn api_server_accepts_an_explicit_bearer_token() {
-    let token = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+    let token = "test-api-token";
     let cli = RawCli::try_parse_from(["codex-raw", "api-server", "--api-token", token])
         .expect("parse api-server token");
 
@@ -167,7 +167,7 @@ fn api_server_accepts_an_explicit_bearer_token() {
         RawCommand::ApiServer {
             api_token: Some(token),
             ..
-        } if token == "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        } if token == "test-api-token"
     ));
 }
 

@@ -112,6 +112,48 @@ jobs:
 
           echo "version=$crate_version" >> "$GITHUB_OUTPUT"
 
+      - name: Validate curated release notes
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          readonly heading_prefix="## [${RELEASE_VERSION}] - "
+          mapfile -t version_headings < <(
+            grep -F "## [${RELEASE_VERSION}]" CHANGELOG.md || true
+          )
+          [[ "${#version_headings[@]}" -eq 1 ]] || {
+            echo "::error::CHANGELOG.md must contain exactly one ${RELEASE_VERSION} release heading"
+            exit 1
+          }
+
+          readonly heading="${version_headings[0]}"
+          readonly release_date="${heading#"$heading_prefix"}"
+          [[ "$heading" == "$heading_prefix"* ]] &&
+            [[ "$release_date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || {
+              echo "::error::The ${RELEASE_VERSION} changelog heading must include an ISO release date"
+              exit 1
+            }
+
+          awk -v heading_prefix="$heading_prefix" '
+            index($0, heading_prefix) == 1 {
+              capture = 1
+              next
+            }
+            capture && /^## \[/ {
+              exit
+            }
+            capture {
+              print
+            }
+          ' CHANGELOG.md > "$RUNNER_TEMP/codex-raw-release-notes.md"
+
+          grep -Eq '[^[:space:]]' "$RUNNER_TEMP/codex-raw-release-notes.md" || {
+            echo "::error::The ${RELEASE_VERSION} changelog section is empty"
+            exit 1
+          }
+
   build:
     name: Build ${{ matrix.target }}
     if: github.repository == 'bproject07/Codex-Source'
@@ -166,6 +208,44 @@ jobs:
         working-directory: codex-rs
         run: cargo build --locked --release --package codex-raw --target "${{ matrix.target }}"
 
+      - name: Smoke-test Linux or macOS binary
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          readonly binary="codex-rs/target/${RELEASE_TARGET}/release/codex-raw"
+          readonly actual_version="$("$binary" --version)"
+          [[ "$actual_version" == "codex-raw ${RELEASE_VERSION}" ]] || {
+            echo "::error::Expected codex-raw ${RELEASE_VERSION}, got ${actual_version}"
+            exit 1
+          }
+          "$binary" update --help > /dev/null
+          "$binary" api-server --help > /dev/null
+
+      - name: Smoke-test Windows binary
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $binary = "codex-rs\target\$env:RELEASE_TARGET\release\codex-raw.exe"
+          $actualVersion = (& $binary --version | Out-String).Trim()
+          if ($LASTEXITCODE -ne 0) {
+            throw "codex-raw --version exited with $LASTEXITCODE"
+          }
+          if ($actualVersion -ne "codex-raw $env:RELEASE_VERSION") {
+            throw "Expected codex-raw $env:RELEASE_VERSION, got $actualVersion"
+          }
+          & $binary update --help | Out-Null
+          if ($LASTEXITCODE -ne 0) {
+            throw "codex-raw update --help exited with $LASTEXITCODE"
+          }
+          & $binary api-server --help | Out-Null
+          if ($LASTEXITCODE -ne 0) {
+            throw "codex-raw api-server --help exited with $LASTEXITCODE"
+          }
+
       - name: Create Linux or macOS archive
         if: runner.os != 'Windows'
         shell: bash
@@ -173,9 +253,25 @@ jobs:
           set -euo pipefail
 
           readonly bundle="codex-raw-${RELEASE_VERSION}-${RELEASE_TARGET}"
-          mkdir -p "dist/$bundle"
+          mkdir -p \
+            "dist/$bundle/docs" \
+            "dist/$bundle/codex-rs/raw-cli"
           cp "codex-rs/target/${RELEASE_TARGET}/release/codex-raw" "dist/$bundle/"
-          cp LICENSE NOTICE README.md "dist/$bundle/"
+          cp \
+            API.md \
+            CHANGELOG.md \
+            CODE_OF_CONDUCT.md \
+            CONTRIBUTING.md \
+            INSTALL.md \
+            LICENSE \
+            NOTICE \
+            README.md \
+            SECURITY.md \
+            SUPPORT.md \
+            UPSTREAM.md \
+            "dist/$bundle/"
+          cp docs/CLA.md docs/contributing.md "dist/$bundle/docs/"
+          cp codex-rs/raw-cli/README.md "dist/$bundle/codex-rs/raw-cli/"
           tar -C dist -czf "dist/${bundle}.tar.gz" "$bundle"
 
       - name: Create Windows archive
@@ -185,9 +281,29 @@ jobs:
           $ErrorActionPreference = 'Stop'
 
           $bundle = "codex-raw-$env:RELEASE_VERSION-$env:RELEASE_TARGET"
-          New-Item -ItemType Directory -Path "dist\$bundle" -Force | Out-Null
+          New-Item -ItemType Directory -Path `
+            "dist\$bundle\docs", `
+            "dist\$bundle\codex-rs\raw-cli" `
+            -Force | Out-Null
           Copy-Item "codex-rs\target\$env:RELEASE_TARGET\release\codex-raw.exe" "dist\$bundle\"
-          Copy-Item LICENSE, NOTICE, README.md "dist\$bundle\"
+          $rootDocs = @(
+            "API.md"
+            "CHANGELOG.md"
+            "CODE_OF_CONDUCT.md"
+            "CONTRIBUTING.md"
+            "INSTALL.md"
+            "LICENSE"
+            "NOTICE"
+            "README.md"
+            "SECURITY.md"
+            "SUPPORT.md"
+            "UPSTREAM.md"
+          )
+          Copy-Item -LiteralPath $rootDocs -Destination "dist\$bundle\"
+          Copy-Item -LiteralPath "docs\CLA.md", "docs\contributing.md" `
+            -Destination "dist\$bundle\docs\"
+          Copy-Item -LiteralPath "codex-rs\raw-cli\README.md" `
+            -Destination "dist\$bundle\codex-rs\raw-cli\"
           Compress-Archive -Path "dist\$bundle" -DestinationPath "dist\$bundle.zip"
 
       - name: Upload release archive
@@ -239,6 +355,12 @@ jobs:
             echo '::error::Enable release immutability, then set CODEX_RAW_IMMUTABLE_RELEASES=enabled'
             exit 1
           }
+
+      - name: Check out validated release notes
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ needs.validate.outputs.commit }}
+          persist-credentials: false
 
       - name: Prepare exact release-tag verifier
         shell: bash
@@ -410,13 +532,32 @@ jobs:
 
           "$RUNNER_TEMP/verify-codex-raw-release-tag.sh" 'before draft creation'
 
+          readonly notes_file="$RUNNER_TEMP/codex-raw-release-notes.md"
+          readonly heading_prefix="## [${RELEASE_VERSION}] - "
+          awk -v heading_prefix="$heading_prefix" '
+            index($0, heading_prefix) == 1 {
+              capture = 1
+              next
+            }
+            capture && /^## \[/ {
+              exit
+            }
+            capture {
+              print
+            }
+          ' CHANGELOG.md > "$notes_file"
+          grep -Eq '[^[:space:]]' "$notes_file" || {
+            echo "::error::Curated release notes for ${RELEASE_VERSION} are missing"
+            exit 1
+          }
+
           release_args=(
             "$GITHUB_REF_NAME"
             --repo "$GITHUB_REPOSITORY"
             --verify-tag
             --draft
             --title "codex-raw ${RELEASE_VERSION}"
-            --generate-notes
+            --notes-file "$notes_file"
           )
           readonly release_precedence="${RELEASE_VERSION%%+*}"
           if [[ "$release_precedence" == *-* ]]; then

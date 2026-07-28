@@ -1,4 +1,11 @@
-Overview of Protocol defined in [protocol.rs](../protocol/src/protocol.rs) and [agent.rs](../core/src/agent.rs).
+# Legacy core protocol overview
+
+> [!CAUTION]
+> This is a historical design document for the standard Codex core, not Codex
+> Raw and not a current wire-protocol specification. Names and lifecycle
+> details below may no longer match the implementation. Use
+> [protocol.rs](../protocol/src/protocol.rs) and the
+> [current agent module](../core/src/agent/mod.rs) as the source of truth.
 
 The goal of this document is to define terminology used in the system and explain the expected behavior of the system.
 
@@ -6,7 +13,7 @@ NOTE: The code might not completely match this spec. There are a few minor chang
 
 ## Entities
 
-These are entities exit on the codex backend. The intent of this section is to establish vocabulary and construct a shared mental model for the `Codex` core system.
+These entities exist in the Codex backend. The intent of this section is to establish vocabulary and construct a shared mental model for the `Codex` core system.
 
 0. `Model`
    - In our case, this is the Responses REST API
@@ -25,7 +32,7 @@ These are entities exit on the codex backend. The intent of this section is to e
    - `Session` has at most one `Task` running at a time.
    - Receiving `Op::UserTurn` starts a `Task` (`Op::UserInput` is legacy)
    - Consists of a series of `Turn`s
-   - The `Task` executes to until:
+   - The `Task` executes until:
      - The `Model` completes the task and there is no output to feed into an additional `Turn`
      - Additional user-turn input aborts the current task and starts a new one
      - UI interrupts with `Op::Interrupt`
@@ -52,7 +59,7 @@ Since only 1 `Task` can be run at a time, for parallel tasks it is recommended t
   - Communicates with UI via a `SQ` (Submission Queue) and `EQ` (Event Queue).
 - `Submission`
   - These are messages sent on the `SQ` (UI -> `Codex`)
-  - Has an string ID provided by the UI, referred to as `sub_id`
+  - Has a string ID provided by the UI, referred to as `sub_id`
   - `Op` refers to the enum of all possible `Submission` payloads
   - In the current codebase these are primarily in-process Rust types rather than a stable serde wire contract
     - This enum is `non_exhaustive`; variants can be added at future dates
