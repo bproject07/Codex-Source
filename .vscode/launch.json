@@ -4,7 +4,7 @@
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Cargo launch",
+      "name": "Codex TUI: Cargo launch",
       "cargo": {
         "cwd": "${workspaceFolder}/codex-rs",
         "args": ["build", "--bin=codex-tui"]
@@ -13,10 +13,131 @@
     },
     {
       "type": "lldb",
+      "request": "launch",
+      "name": "Codex Raw: API server (Windows GNU, debug :8081)",
+      "cargo": {
+        "cwd": "${workspaceFolder}/codex-rs",
+        "args": [
+          "build",
+          "--config",
+          "profile.dev.package.codex-raw.debug=2",
+          "--config",
+          "profile.dev.package.codex-raw.split-debuginfo=\"off\"",
+          "--target",
+          "x86_64-pc-windows-gnu",
+          "-p",
+          "codex-raw",
+          "--bin",
+          "codex-raw"
+        ],
+        "filter": {
+          "name": "codex-raw",
+          "kind": "bin"
+        },
+        "env": {
+          "RUSTUP_TOOLCHAIN": "1.95.0-x86_64-pc-windows-gnu"
+        }
+      },
+      "args": [
+        "-m",
+        "gpt-5.4-mini",
+        "api-server",
+        "--listen",
+        "127.0.0.1:8081",
+        "--max-concurrency",
+        "16"
+      ],
+      "cwd": "${workspaceFolder}/codex-rs",
+      "env": {
+        "RUST_BACKTRACE": "1"
+      },
+      "terminal": "integrated",
+      "sourceLanguages": ["rust"]
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Codex Raw: One-shot prompt (Windows GNU)",
+      "cargo": {
+        "cwd": "${workspaceFolder}/codex-rs",
+        "args": [
+          "build",
+          "--config",
+          "profile.dev.package.codex-raw.debug=2",
+          "--config",
+          "profile.dev.package.codex-raw.split-debuginfo=\"off\"",
+          "--target",
+          "x86_64-pc-windows-gnu",
+          "-p",
+          "codex-raw",
+          "--bin",
+          "codex-raw"
+        ],
+        "filter": {
+          "name": "codex-raw",
+          "kind": "bin"
+        },
+        "env": {
+          "RUSTUP_TOOLCHAIN": "1.95.0-x86_64-pc-windows-gnu"
+        }
+      },
+      "args": ["-m", "gpt-5.4-mini", "${input:codexRawPrompt}"],
+      "cwd": "${workspaceFolder}/codex-rs",
+      "env": {
+        "RUST_BACKTRACE": "1"
+      },
+      "terminal": "integrated",
+      "sourceLanguages": ["rust"]
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Codex Raw: App server (Windows GNU, JSONL)",
+      "cargo": {
+        "cwd": "${workspaceFolder}/codex-rs",
+        "args": [
+          "build",
+          "--config",
+          "profile.dev.package.codex-raw.debug=2",
+          "--config",
+          "profile.dev.package.codex-raw.split-debuginfo=\"off\"",
+          "--target",
+          "x86_64-pc-windows-gnu",
+          "-p",
+          "codex-raw",
+          "--bin",
+          "codex-raw"
+        ],
+        "filter": {
+          "name": "codex-raw",
+          "kind": "bin"
+        },
+        "env": {
+          "RUSTUP_TOOLCHAIN": "1.95.0-x86_64-pc-windows-gnu"
+        }
+      },
+      "args": ["-m", "gpt-5.4-mini", "app-server"],
+      "cwd": "${workspaceFolder}/codex-rs",
+      "env": {
+        "RUST_BACKTRACE": "1"
+      },
+      "terminal": "integrated",
+      "sourceLanguages": ["rust"]
+    },
+    {
+      "type": "lldb",
       "request": "attach",
-      "name": "Attach to running codex CLI",
+      "name": "Codex Raw: Attach to running process",
       "pid": "${command:pickProcess}",
       "sourceLanguages": ["rust"]
+    }
+  ],
+  "inputs": [
+    {
+      "id": "codexRawPrompt",
+      "type": "promptString",
+      "description": "Prompt to send through codex-raw",
+      "default": "hello"
     }
   ]
 }

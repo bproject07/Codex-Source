@@ -1,0 +1,268 @@
+name: codex-raw release
+
+on:
+  push:
+    tags:
+      - codex-raw-v*
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codex-raw-release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_INCREMENTAL: "0"
+  CARGO_TERM_COLOR: always
+
+jobs:
+  validate:
+    name: Validate repository, tag, and crate version
+    if: github.repository == 'bproject07/Codex-Source'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify tag commit is on main
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git fetch --no-tags --prune origin \
+            'refs/heads/main:refs/remotes/origin/main'
+          git show-ref --verify --quiet refs/remotes/origin/main || {
+            echo '::error::Unable to resolve origin/main'
+            exit 1
+          }
+
+          tagged_commit="$(git rev-parse --verify "${GITHUB_SHA}^{commit}")" || {
+            echo '::error::Unable to resolve the tagged commit'
+            exit 1
+          }
+          main_commit="$(git rev-parse --verify 'refs/remotes/origin/main^{commit}')" || {
+            echo '::error::Unable to resolve origin/main to a commit'
+            exit 1
+          }
+          checked_out_commit="$(git rev-parse --verify 'HEAD^{commit}')" || {
+            echo '::error::Unable to resolve the checked-out commit'
+            exit 1
+          }
+          readonly tagged_commit main_commit checked_out_commit
+
+          [[ "$checked_out_commit" == "$tagged_commit" ]] || {
+            echo '::error::Checked-out commit does not match GITHUB_SHA'
+            exit 1
+          }
+          git merge-base --is-ancestor "$tagged_commit" "$main_commit" || {
+            echo '::error::Release tag must point to a commit reachable from origin/main'
+            exit 1
+          }
+
+      - name: Install Rust 1.95.0
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+
+      - name: Validate release identity
+        id: version
+        shell: bash
+        working-directory: codex-rs
+        run: |
+          set -euo pipefail
+
+          readonly expected_repository='bproject07/Codex-Source'
+          readonly tag_prefix='codex-raw-v'
+          readonly semver_pattern='[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?'
+
+          [[ "$GITHUB_REPOSITORY" == "$expected_repository" ]] || {
+            echo "::error::Release is restricted to $expected_repository"
+            exit 1
+          }
+          [[ "$GITHUB_REF_TYPE" == 'tag' ]] || {
+            echo '::error::Release ref must be a tag'
+            exit 1
+          }
+          [[ "$GITHUB_REF_NAME" =~ ^${tag_prefix}(${semver_pattern})$ ]] || {
+            echo "::error::Tag must match ${tag_prefix}<semver>"
+            exit 1
+          }
+
+          readonly tag_version="${BASH_REMATCH[1]}"
+          readonly crate_version="$(
+            cargo metadata --locked --no-deps --format-version 1 |
+              jq -er '[.packages[] | select(.name == "codex-raw") | .version] |
+                if length == 1 then .[0] else error("expected exactly one codex-raw package") end'
+          )"
+
+          [[ "$tag_version" == "$crate_version" ]] || {
+            echo "::error::Tag version $tag_version does not match codex-raw version $crate_version"
+            exit 1
+          }
+
+          echo "version=$crate_version" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build ${{ matrix.target }}
+    if: github.repository == 'bproject07/Codex-Source'
+    needs: validate
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+            archive: tar.gz
+          - os: windows-2025
+            target: x86_64-pc-windows-msvc
+            archive: zip
+          - os: macos-15-intel
+            target: x86_64-apple-darwin
+            archive: tar.gz
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    env:
+      RELEASE_VERSION: ${{ needs.validate.outputs.version }}
+      RELEASE_TARGET: ${{ matrix.target }}
+
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Install Rust 1.95.0
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Build release binary
+        working-directory: codex-rs
+        run: cargo build --locked --release --package codex-raw --target "${{ matrix.target }}"
+
+      - name: Create Linux or macOS archive
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          readonly bundle="codex-raw-${RELEASE_VERSION}-${RELEASE_TARGET}"
+          mkdir -p "dist/$bundle"
+          cp "codex-rs/target/${RELEASE_TARGET}/release/codex-raw" "dist/$bundle/"
+          cp LICENSE NOTICE README.md "dist/$bundle/"
+          tar -C dist -czf "dist/${bundle}.tar.gz" "$bundle"
+
+      - name: Create Windows archive
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $bundle = "codex-raw-$env:RELEASE_VERSION-$env:RELEASE_TARGET"
+          New-Item -ItemType Directory -Path "dist\$bundle" -Force | Out-Null
+          Copy-Item "codex-rs\target\$env:RELEASE_TARGET\release\codex-raw.exe" "dist\$bundle\"
+          Copy-Item LICENSE, NOTICE, README.md "dist\$bundle\"
+          Compress-Archive -Path "dist\$bundle" -DestinationPath "dist\$bundle.zip"
+
+      - name: Upload release archive
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codex-raw-${{ matrix.target }}
+          path: dist/codex-raw-*.${{ matrix.archive }}
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+
+  publish:
+    name: Publish GitHub release
+    if: github.repository == 'bproject07/Codex-Source'
+    needs:
+      - validate
+      - build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    env:
+      RELEASE_VERSION: ${{ needs.validate.outputs.version }}
+
+    steps:
+      - name: Download release archives
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: release-assets
+          pattern: codex-raw-*
+          merge-multiple: true
+
+      - name: Verify archives and write SHA-256 manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          readonly base="codex-raw-${RELEASE_VERSION}"
+          readonly linux="${base}-x86_64-unknown-linux-gnu.tar.gz"
+          readonly windows="${base}-x86_64-pc-windows-msvc.zip"
+          readonly macos="${base}-x86_64-apple-darwin.tar.gz"
+          readonly expected=("$linux" "$windows" "$macos")
+
+          for archive in "${expected[@]}"; do
+            [[ -f "release-assets/$archive" ]] || {
+              echo "::error::Missing release archive: $archive"
+              exit 1
+            }
+          done
+
+          mapfile -t actual < <(
+            find release-assets -maxdepth 1 -type f -printf '%f\n' | sort
+          )
+          [[ "${#actual[@]}" -eq "${#expected[@]}" ]] || {
+            echo "::error::Expected ${#expected[@]} release archives, found ${#actual[@]}"
+            exit 1
+          }
+
+          (
+            cd release-assets
+            sha256sum "$linux" "$windows" "$macos" > SHA256SUMS
+          )
+
+      - name: Create GitHub release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          [[ "$GITHUB_REPOSITORY" == 'bproject07/Codex-Source' ]] || {
+            echo '::error::Repository guard failed'
+            exit 1
+          }
+          [[ "$GITHUB_REF_TYPE" == 'tag' ]] || {
+            echo '::error::Release ref must be a tag'
+            exit 1
+          }
+          [[ "$GITHUB_REF_NAME" == "codex-raw-v${RELEASE_VERSION}" ]] || {
+            echo '::error::Validated version no longer matches the release tag'
+            exit 1
+          }
+
+          release_args=(
+            "$GITHUB_REF_NAME"
+            release-assets/*
+            --repo "$GITHUB_REPOSITORY"
+            --verify-tag
+            --title "codex-raw ${RELEASE_VERSION}"
+            --generate-notes
+          )
+          if [[ "$RELEASE_VERSION" == *-* ]]; then
+            release_args+=(--prerelease)
+          fi
+
+          gh release create "${release_args[@]}"

@@ -1,0 +1,54 @@
+name: Question or support request
+description: Ask about building or using this fork.
+title: "[Question] "
+labels:
+  - question
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Support is best-effort. OpenAI account, subscription, billing, and
+        hosted-service questions belong in the OpenAI Help Center, not this
+        repository.
+  - type: dropdown
+    id: topic
+    attributes:
+      label: Topic
+      options:
+        - Building from source
+        - Codex Raw CLI
+        - Codex Raw HTTP API
+        - Fork configuration
+        - Upstream synchronization
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: revision
+    attributes:
+      label: Version or commit
+      placeholder: codex-raw 0.x.y / commit abc1234
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Operating system and architecture
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: Explain what you are trying to do, what you tried, and where you are blocked.
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Submission checks
+      options:
+        - label: I searched the documentation and existing issues.
+          required: true
+        - label: I removed credentials, private prompts, personal data, and sensitive logs.
+          required: true

@@ -1,49 +1,30 @@
-# Individual Contributor License Agreement (v1.0, OpenAI)
+# Contribution Licensing
 
-_Based on the Apache Software Foundation Individual CLA v 2.2._
+## No separate CLA
 
-By commenting **“I have read the CLA Document and I hereby sign the CLA”**
-on a Pull Request, **you (“Contributor”) agree to the following terms** for any
-past and future “Contributions” submitted to the **OpenAI Codex CLI project
-(the “Project”)**.
+`bproject07/Codex-Source` does not currently require a separate contributor
+license agreement or a CLA bot signature. The OpenAI CLA and its acceptance
+comment do not apply to pull requests submitted to this independent fork.
 
----
+## Apache-2.0 inbound licensing
 
-## 1. Definitions
+The project's inbound and outbound license is the
+[Apache License 2.0](../LICENSE). By intentionally submitting code,
+documentation, or another contribution to this repository, you agree to
+license that contribution under Apache-2.0.
 
-- **“Contribution”** – any original work of authorship submitted to the Project
-  (code, documentation, designs, etc.).
-- **“You” / “Your”** – the individual (or legal entity) posting the acceptance
-  comment.
+You retain copyright in your contribution. You represent that:
 
-## 2. Copyright License
+- you created the contribution or have sufficient permission to submit it;
+- you have the right to grant the Apache-2.0 copyright and patent licenses;
+- you have identified third-party material and supplied any required notices;
+  and
+- the contribution does not knowingly include secrets, private data, or code
+  whose license is incompatible with Apache-2.0 distribution.
 
-You grant **OpenAI, Inc.** and all recipients of software distributed by the
-Project a perpetual, worldwide, non‑exclusive, royalty‑free, irrevocable
-license to reproduce, prepare derivative works of, publicly display, publicly
-perform, sublicense, and distribute Your Contributions and derivative works.
+If your employer or another party owns rights in your work, obtain any required
+permission before submitting it.
 
-## 3. Patent License
-
-You grant **OpenAI, Inc.** and all recipients of the Project a perpetual,
-worldwide, non‑exclusive, royalty‑free, irrevocable (except as below) patent
-license to make, have made, use, sell, offer to sell, import, and otherwise
-transfer Your Contributions alone or in combination with the Project.
-
-If any entity brings patent litigation alleging that the Project or a
-Contribution infringes a patent, the patent licenses granted by You to that
-entity under this CLA terminate.
-
-## 4. Representations
-
-1. You are legally entitled to grant the licenses above.
-2. Each Contribution is either Your original creation or You have authority to
-   submit it under this CLA.
-3. Your Contributions are provided **“AS IS”** without warranties of any kind.
-4. You will notify the Project if any statement above becomes inaccurate.
-
-## 5. Miscellany
-
-This Agreement is governed by the laws of the **State of California**, USA,
-excluding its conflict‑of‑laws rules. If any provision is held unenforceable,
-the remaining provisions remain in force.
+This policy applies only to contributions submitted to
+`bproject07/Codex-Source`. It does not change the contribution requirements of
+[`openai/codex`](https://github.com/openai/codex) or any other upstream project.

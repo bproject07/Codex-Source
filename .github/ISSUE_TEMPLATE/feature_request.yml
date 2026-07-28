@@ -1,0 +1,56 @@
+name: Feature request
+description: Propose a maintainable improvement to this fork.
+title: "[Feature] "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Search existing issues first. Explain why this belongs in the fork and
+        how it affects future synchronization with upstream Codex.
+  - type: dropdown
+    id: component
+    attributes:
+      label: Target component
+      options:
+        - Codex Raw CLI
+        - Codex Raw HTTP API
+        - Inherited Codex behavior
+        - Build or packaging
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Describe the user need or limitation, not only the desired implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe behavior, compatibility, and security implications.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: textarea
+    id: upstream
+    attributes:
+      label: Upstream relationship
+      description: Link related upstream issues or explain why the change is fork-specific.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Submission checks
+      options:
+        - label: I searched existing fork and upstream issues for similar requests.
+          required: true
+        - label: I have not included credentials, private prompts, or personal data.
+          required: true

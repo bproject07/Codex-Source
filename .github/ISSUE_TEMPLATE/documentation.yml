@@ -1,0 +1,40 @@
+name: Documentation issue
+description: Report missing, incorrect, or unclear fork documentation.
+title: "[Docs] "
+labels:
+  - documentation
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Issue type
+      options:
+        - Missing documentation
+        - Incorrect documentation
+        - Unclear documentation
+        - Broken example or link
+    validations:
+      required: true
+  - type: input
+    id: location
+    attributes:
+      label: Location
+      description: Link the page or provide the repository path and section.
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: What should change?
+      description: Explain what is wrong and, if possible, suggest corrected wording.
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Submission checks
+      options:
+        - label: This report concerns documentation maintained in this fork.
+          required: true
+        - label: I removed credentials, private prompts, and personal data.
+          required: true

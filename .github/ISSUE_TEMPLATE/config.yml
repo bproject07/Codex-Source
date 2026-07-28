@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability privately
+    url: https://github.com/bproject07/Codex-Source/security/advisories/new
+    about: Do not disclose suspected vulnerabilities in a public issue.
+  - name: Report an upstream Codex issue
+    url: https://github.com/openai/codex/issues
+    about: Use upstream when the problem reproduces in unmodified current Codex.

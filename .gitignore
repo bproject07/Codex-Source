@@ -54,6 +54,13 @@ yarn-error.log*
 !.env.example
 .venv/
 
+# local credentials and application state
+**/.codex-raw/
+**/.codex/auth.json
+**/.codex/history.jsonl
+/auth.json
+/credentials.json
+
 # package
 *.tgz
 
@@ -75,6 +82,7 @@ personal/
 # os
 .DS_Store
 Thumbs.db
+*.stackdump
 Icon?
 .Spotlight-V100/
 

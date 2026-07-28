@@ -1,0 +1,50 @@
+[package]
+name = "codex-raw"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+description = "Minimal stateless model client built from the Codex transport"
+repository = "https://github.com/bproject07/Codex-Source"
+homepage = "https://github.com/bproject07/Codex-Source"
+readme = "README.md"
+publish = false
+
+[lib]
+doctest = false
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+async-stream = { workspace = true }
+axum = { workspace = true, default-features = false, features = [
+    "http1",
+    "json",
+    "tokio",
+] }
+clap = { workspace = true, features = ["derive", "env"] }
+codex-api = { workspace = true }
+codex-http-client = { workspace = true }
+codex-login = { workspace = true }
+codex-model-provider = { workspace = true }
+codex-model-provider-info = { workspace = true }
+codex-models-manager = { workspace = true }
+codex-protocol = { workspace = true }
+constant_time_eq = { workspace = true }
+http = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+tokio = { workspace = true, features = [
+    "macros",
+    "net",
+    "rt-multi-thread",
+    "signal",
+    "sync",
+    "time",
+] }
+
+[dev-dependencies]
+pretty_assertions = { workspace = true }
+reqwest = { workspace = true, features = ["json", "stream"] }
+tempfile = { workspace = true }
