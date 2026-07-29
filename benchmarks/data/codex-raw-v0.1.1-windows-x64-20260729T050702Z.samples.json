@@ -1,0 +1,189 @@
+{
+  "schema": "codex-raw-benchmark-samples-v2",
+  "warmup_turns_completed": 2,
+  "warmup_samples_retained": false,
+  "measured_turns": 20,
+  "ordering": "one app-server and one api-server per pair; first mode alternates",
+  "samples": [
+    {
+      "sequence": 1,
+      "pair": 1,
+      "mode": "app-server",
+      "ttft_ms": 1333.8782,
+      "total_ms": 1563.53,
+      "input_tokens": 7,
+      "output_chars": 32
+    },
+    {
+      "sequence": 2,
+      "pair": 1,
+      "mode": "api-server",
+      "ttft_ms": 1484.2748,
+      "total_ms": 1693.171,
+      "input_tokens": 7,
+      "output_chars": 29
+    },
+    {
+      "sequence": 3,
+      "pair": 2,
+      "mode": "api-server",
+      "ttft_ms": 1900.7111,
+      "total_ms": 2170.6873,
+      "input_tokens": 7,
+      "output_chars": 32
+    },
+    {
+      "sequence": 4,
+      "pair": 2,
+      "mode": "app-server",
+      "ttft_ms": 2390.8814,
+      "total_ms": 2588.0529,
+      "input_tokens": 7,
+      "output_chars": 32
+    },
+    {
+      "sequence": 5,
+      "pair": 3,
+      "mode": "app-server",
+      "ttft_ms": 683.806,
+      "total_ms": 932.42,
+      "input_tokens": 7,
+      "output_chars": 32
+    },
+    {
+      "sequence": 6,
+      "pair": 3,
+      "mode": "api-server",
+      "ttft_ms": 898.4213,
+      "total_ms": 1100.9768,
+      "input_tokens": 7,
+      "output_chars": 32
+    },
+    {
+      "sequence": 7,
+      "pair": 4,
+      "mode": "api-server",
+      "ttft_ms": 633.9082,
+      "total_ms": 829.794,
+      "input_tokens": 7,
+      "output_chars": 32
+    },
+    {
+      "sequence": 8,
+      "pair": 4,
+      "mode": "app-server",
+      "ttft_ms": 820.8882,
+      "total_ms": 995.171,
+      "input_tokens": 7,
+      "output_chars": 32
+    },
+    {
+      "sequence": 9,
+      "pair": 5,
+      "mode": "app-server",
+      "ttft_ms": 622.084,
+      "total_ms": 826.1945,
+      "input_tokens": 7,
+      "output_chars": 32
+    },
+    {
+      "sequence": 10,
+      "pair": 5,
+      "mode": "api-server",
+      "ttft_ms": 671.0134,
+      "total_ms": 912.4867,
+      "input_tokens": 7,
+      "output_chars": 32
+    },
+    {
+      "sequence": 11,
+      "pair": 6,
+      "mode": "api-server",
+      "ttft_ms": 813.9887,
+      "total_ms": 1030.7894,
+      "input_tokens": 7,
+      "output_chars": 32
+    },
+    {
+      "sequence": 12,
+      "pair": 6,
+      "mode": "app-server",
+      "ttft_ms": 1050.8383,
+      "total_ms": 1197.9867,
+      "input_tokens": 7,
+      "output_chars": 32
+    },
+    {
+      "sequence": 13,
+      "pair": 7,
+      "mode": "app-server",
+      "ttft_ms": 675.0878,
+      "total_ms": 889.8208,
+      "input_tokens": 7,
+      "output_chars": 32
+    },
+    {
+      "sequence": 14,
+      "pair": 7,
+      "mode": "api-server",
+      "ttft_ms": 731.8774,
+      "total_ms": 919.5329,
+      "input_tokens": 7,
+      "output_chars": 32
+    },
+    {
+      "sequence": 15,
+      "pair": 8,
+      "mode": "api-server",
+      "ttft_ms": 677.7082,
+      "total_ms": 897.3414,
+      "input_tokens": 7,
+      "output_chars": 32
+    },
+    {
+      "sequence": 16,
+      "pair": 8,
+      "mode": "app-server",
+      "ttft_ms": 810.6472,
+      "total_ms": 972.288,
+      "input_tokens": 7,
+      "output_chars": 32
+    },
+    {
+      "sequence": 17,
+      "pair": 9,
+      "mode": "app-server",
+      "ttft_ms": 744.8626,
+      "total_ms": 940.041,
+      "input_tokens": 7,
+      "output_chars": 32
+    },
+    {
+      "sequence": 18,
+      "pair": 9,
+      "mode": "api-server",
+      "ttft_ms": 663.1741,
+      "total_ms": 866.4232,
+      "input_tokens": 7,
+      "output_chars": 32
+    },
+    {
+      "sequence": 19,
+      "pair": 10,
+      "mode": "api-server",
+      "ttft_ms": 517.0967,
+      "total_ms": 722.0621,
+      "input_tokens": 7,
+      "output_chars": 32
+    },
+    {
+      "sequence": 20,
+      "pair": 10,
+      "mode": "app-server",
+      "ttft_ms": 3022.9238,
+      "total_ms": 3292.1373,
+      "input_tokens": 7,
+      "output_chars": 32
+    }
+  ]
+}

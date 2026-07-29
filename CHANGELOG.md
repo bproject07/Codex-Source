@@ -9,6 +9,12 @@ and uses semantic versioning for the `codex-raw` executable.
 
 ## [Unreleased]
 
+### Documentation
+
+- Published a second release-bound benchmark for the immutable `0.1.1`
+  Windows x64 asset, including sanitized per-sample measurements and exact
+  provenance.
+
 ## [0.1.1] - 2026-07-29
 
 ### Added
