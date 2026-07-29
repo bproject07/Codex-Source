@@ -58,7 +58,7 @@ before overriding any operating-system trust warning.
 On Windows PowerShell:
 
 ```powershell
-$archive = "codex-raw-0.1.0-x86_64-pc-windows-msvc.zip" # Use the release version.
+$archive = "codex-raw-0.1.1-x86_64-pc-windows-msvc.zip" # Use the release version.
 $line = Get-Content .\SHA256SUMS |
   Where-Object { $_ -match "  $([regex]::Escape($archive))$" }
 
@@ -77,7 +77,7 @@ if ($actual -ne $expected) {
 On Linux:
 
 ```shell
-archive="codex-raw-0.1.0-x86_64-unknown-linux-gnu.tar.gz" # Use your release/CPU.
+archive="codex-raw-0.1.1-x86_64-unknown-linux-gnu.tar.gz" # Use your release/CPU.
 expected="$(awk -v name="$archive" '$2 == name { print $1 }' SHA256SUMS)"
 actual="$(sha256sum "$archive" | awk '{ print $1 }')"
 test -n "$expected" && test "$actual" = "$expected"
@@ -86,7 +86,7 @@ test -n "$expected" && test "$actual" = "$expected"
 On macOS:
 
 ```shell
-archive="codex-raw-0.1.0-x86_64-apple-darwin.tar.gz" # Use the release version.
+archive="codex-raw-0.1.1-x86_64-apple-darwin.tar.gz" # Use the release version.
 expected="$(awk -v name="$archive" '$2 == name { print $1 }' SHA256SUMS)"
 actual="$(shasum -a 256 "$archive" | awk '{ print $1 }')"
 test -n "$expected" && test "$actual" = "$expected"
@@ -100,7 +100,7 @@ exit status means the file must not be installed.
 After verifying and extracting the ZIP:
 
 ```powershell
-$version = "0.1.0" # Replace with the downloaded release version.
+$version = "0.1.1" # Replace with the downloaded release version.
 $bundle = "codex-raw-$version-x86_64-pc-windows-msvc"
 $installDir = Join-Path $env:LOCALAPPDATA "Programs\codex-raw"
 
@@ -136,7 +136,7 @@ The final two commands activate `codex-raw` in the current shell. The user
 After verifying the matching TAR archive:
 
 ```shell
-version="0.1.0" # Replace with the downloaded release version.
+version="0.1.1" # Replace with the downloaded release version.
 
 case "$(uname -m)" in
   x86_64|amd64) target="x86_64-unknown-linux-gnu" ;;
@@ -161,7 +161,7 @@ root-owned managed layout; updating such an installation requires `sudo`.
 After verifying the TAR archive:
 
 ```shell
-version="0.1.0" # Replace with the downloaded release version.
+version="0.1.1" # Replace with the downloaded release version.
 bundle="codex-raw-${version}-x86_64-apple-darwin"
 
 tar -xzf "${bundle}.tar.gz"

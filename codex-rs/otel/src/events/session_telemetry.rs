@@ -50,6 +50,7 @@ use eventsource_stream::EventStreamError as StreamError;
 use opentelemetry_sdk::metrics::data::ResourceMetrics;
 use reqwest::Error;
 use reqwest::Response;
+use reqwest_otel as reqwest;
 use std::borrow::Cow;
 use std::future::Future;
 use std::time::Duration;
