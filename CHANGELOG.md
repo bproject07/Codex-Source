@@ -9,6 +9,8 @@ and uses semantic versioning for the `codex-raw` executable.
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-07-29
+
 ### Added
 
 - A release-bound benchmark report with sanitized per-sample data and exact
@@ -22,6 +24,19 @@ and uses semantic versioning for the `codex-raw` executable.
 - Future release archives include `BENCHMARKS.md`.
 - Draft release verification now resolves the draft's numeric GitHub release
   ID before using the REST API, whose tag endpoint does not expose drafts.
+
+### Security
+
+- Updated the shipped dependency closure to patched releases of `gix`,
+  `gix-fs`, `gix-pack`, `jsonwebtoken`, `opentelemetry_sdk`, `serde_with`,
+  `tar`, and, on Linux, OpenSSL.
+- Moved the OpenTelemetry HTTP exporter to its matching `reqwest` 0.13 client
+  while preserving custom-CA-only TLS behavior.
+- The inherited Hickory 0.25 resolver remains pinned by Rama
+  `0.3.0-alpha.4`. The high-severity NSEC3 issue requires DNSSEC features that
+  Codex Raw does not enable; this release does not claim to fix the remaining
+  Hickory advisories. Moving to stable Rama is a separate breaking API and
+  Rust-toolchain migration.
 
 ## [0.1.0] - 2026-07-29
 
@@ -46,5 +61,6 @@ and uses semantic versioning for the `codex-raw` executable.
 - Exact-process restart handling on Windows and guarded systemd
   stop/restart/health-check with best-effort rollback handling on Linux.
 
-[Unreleased]: https://github.com/bproject07/Codex-Source/compare/codex-raw-v0.1.0...HEAD
+[Unreleased]: https://github.com/bproject07/Codex-Source/compare/codex-raw-v0.1.1...HEAD
+[0.1.1]: https://github.com/bproject07/Codex-Source/compare/codex-raw-v0.1.0...codex-raw-v0.1.1
 [0.1.0]: https://github.com/bproject07/Codex-Source/releases/tag/codex-raw-v0.1.0
