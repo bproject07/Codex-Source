@@ -9,6 +9,8 @@ and uses semantic versioning for the `codex-raw` executable.
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-09-13
+
 ### Changed
 
 - Updated the inherited Codex source to upstream commit `516f2780fd` from
@@ -17,6 +19,8 @@ and uses semantic versioning for the `codex-raw` executable.
 - Adapted Raw to the upstream response event and request types, and added an
   HTTP transport regression test for the outgoing request, streamed text,
   and exact token usage.
+- Release builds now run the focused Raw tests on all four supported
+  platforms before publishing the archives.
 
 ### Documentation
 
@@ -76,6 +80,7 @@ and uses semantic versioning for the `codex-raw` executable.
 - Exact-process restart handling on Windows and guarded systemd
   stop/restart/health-check with best-effort rollback handling on Linux.
 
-[Unreleased]: https://github.com/bproject07/Codex-Source/compare/codex-raw-v0.1.1...HEAD
+[Unreleased]: https://github.com/bproject07/Codex-Source/compare/codex-raw-v0.1.2...HEAD
+[0.1.2]: https://github.com/bproject07/Codex-Source/compare/codex-raw-v0.1.1...codex-raw-v0.1.2
 [0.1.1]: https://github.com/bproject07/Codex-Source/compare/codex-raw-v0.1.0...codex-raw-v0.1.1
 [0.1.0]: https://github.com/bproject07/Codex-Source/releases/tag/codex-raw-v0.1.0
