@@ -9,6 +9,17 @@ and uses semantic versioning for the `codex-raw` executable.
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-09-13
+
+### Fixed
+
+- Start the Windows update helper without a visible console using a process
+  mode that lets Windows PowerShell execute the replacement script. Older
+  builds could exit before transferring the updater lock or replacing the
+  executable. A native Windows process test now covers this handoff in CI.
+- Windows installations affected by the older helper must replace the
+  executable once from a verified release archive; see `INSTALL.md`.
+
 ## [0.1.2] - 2026-09-13
 
 ### Changed
@@ -80,7 +91,8 @@ and uses semantic versioning for the `codex-raw` executable.
 - Exact-process restart handling on Windows and guarded systemd
   stop/restart/health-check with best-effort rollback handling on Linux.
 
-[Unreleased]: https://github.com/bproject07/Codex-Source/compare/codex-raw-v0.1.2...HEAD
+[Unreleased]: https://github.com/bproject07/Codex-Source/compare/codex-raw-v0.1.3...HEAD
+[0.1.3]: https://github.com/bproject07/Codex-Source/compare/codex-raw-v0.1.2...codex-raw-v0.1.3
 [0.1.2]: https://github.com/bproject07/Codex-Source/compare/codex-raw-v0.1.1...codex-raw-v0.1.2
 [0.1.1]: https://github.com/bproject07/Codex-Source/compare/codex-raw-v0.1.0...codex-raw-v0.1.1
 [0.1.0]: https://github.com/bproject07/Codex-Source/releases/tag/codex-raw-v0.1.0

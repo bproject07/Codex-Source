@@ -80,7 +80,9 @@ pub(crate) async fn begin(
 ) -> Result<WindowsHandoff> {
     use std::os::windows::process::CommandExt;
 
-    const DETACHED_PROCESS: u32 = 0x0000_0008;
+    // Windows PowerShell exits without running -Command under DETACHED_PROCESS.
+    // CREATE_NO_WINDOW runs the helper without a console while retaining execution.
+    const CREATE_NO_WINDOW: u32 = 0x0800_0000;
     const CREATE_NEW_PROCESS_GROUP: u32 = 0x0000_0200;
 
     installation.ensure_no_handoff()?;
@@ -126,7 +128,7 @@ pub(crate) async fn begin(
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
-        .creation_flags(DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP)
+        .creation_flags(CREATE_NO_WINDOW | CREATE_NEW_PROCESS_GROUP)
         .spawn()
         .context("failed to start the detached Windows update helper")?;
 
@@ -268,6 +270,10 @@ impl Drop for OwnedHandoffMarker {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "handoff_process_tests.rs"]
+mod process_tests;
 
 #[cfg(test)]
 mod tests {
