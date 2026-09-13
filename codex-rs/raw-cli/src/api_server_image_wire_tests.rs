@@ -87,9 +87,11 @@ fn renders_image_generation_response_without_copying_api_only_fields() {
         data: vec![
             ImageData {
                 b64_json: "first".to_string(),
+                generation_id: Some("generation_first".to_string()),
             },
             ImageData {
                 b64_json: "second".to_string(),
+                generation_id: None,
             },
         ],
         background: Some(ImageBackground::Opaque),

@@ -208,6 +208,22 @@ jobs:
         working-directory: codex-rs
         run: cargo build --locked --release --package codex-raw --target "${{ matrix.target }}"
 
+      - name: Install just
+        uses: taiki-e/install-action@44c6d64aa62cd779e873306675c7a58e86d6d532 # v2.62.49
+        with:
+          tool: just@1.42.4
+          fallback: none
+
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@44c6d64aa62cd779e873306675c7a58e86d6d532 # v2.62.49
+        with:
+          tool: nextest@0.9.103
+          fallback: none
+
+      - name: Run Raw tests for release target
+        working-directory: codex-rs
+        run: just test --locked --release --target "${{ matrix.target }}" -p codex-raw
+
       - name: Smoke-test Linux or macOS binary
         if: runner.os != 'Windows'
         shell: bash

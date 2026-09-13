@@ -4,7 +4,7 @@ This public fork intentionally carries only two workflows:
 
 - `codex-raw-ci.yml` checks formatting, Clippy, nextest tests, and a locked
   release build for the `codex-raw` crate.
-- `codex-raw-release.yml` builds four platform archives (Linux x64,
+- `codex-raw-release.yml` builds and tests four platform archives (Linux x64,
   GitHub-hosted native Linux ARM64, Windows x64, and macOS Intel) and
   publishes a GitHub release only for `codex-raw-v*` tags in
   `bproject07/Codex-Source`.

@@ -1,3 +1,20 @@
+# Build placement for this workstation
+
+- This Windows workstation is a virtual machine. Do not start local compilation,
+  Cargo test builds, Clippy, or release builds here unless the user explicitly
+  requests a local build.
+- Use the designated Linux build host for both native Linux builds and Windows
+  cross-compilation. Run Linux tests there. Transfer the Windows binaries and
+  prebuilt test archives back to this VM to execute Windows checks without
+  rebuilding (for example, `just test --archive-file ... --workspace-remap ...`).
+- Read the ignored `.codex-local-testing.md` for host details and the remote
+  build procedure. Keep host addresses, credentials, and private infrastructure
+  notes out of tracked files and release archives.
+- Use a unique scratch directory and an isolated container on the Linux host.
+  Do not touch production installations or unrelated containers and caches.
+- If the Linux host is unavailable, report that condition instead of silently
+  falling back to compilation on this VM.
+
 # Rust/codex-rs
 
 In the codex-rs folder where the rust code lives:
@@ -263,7 +280,6 @@ These guidelines apply to app-server protocol work in `codex-rs`, especially:
 
 - `app-server-protocol/src/protocol/common.rs`
 - `app-server-protocol/src/protocol/v2.rs`
-- `app-server/README.md`
 
 ### Core Rules
 
@@ -297,7 +313,6 @@ These guidelines apply to app-server protocol work in `codex-rs`, especially:
 
 ### Development Workflow
 
-- Update app-server docs/examples when API behavior changes (at minimum `app-server/README.md`).
 - Regenerate schema fixtures when API shapes change:
   `just write-app-server-schema`
   (and `just write-app-server-schema --experimental` when experimental API fixtures are affected).

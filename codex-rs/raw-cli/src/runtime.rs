@@ -172,10 +172,12 @@ impl RawRuntime {
         request: ImageGenerationRequest,
     ) -> Result<ImageResponse> {
         let api_auth = self.refreshed_api_auth().await?;
-        ImagesClient::new(self.transport.clone(), self.api_provider.clone(), api_auth)
-            .generate(&request, HeaderMap::new())
-            .await
-            .context("failed to generate an image through the Raw ChatGPT login")
+        let (response, _request_id) =
+            ImagesClient::new(self.transport.clone(), self.api_provider.clone(), api_auth)
+                .generate(&request, HeaderMap::new())
+                .await
+                .context("failed to generate an image through the Raw ChatGPT login")?;
+        Ok(response)
     }
 
     pub(crate) async fn stream_prompt<F>(
@@ -280,7 +282,7 @@ impl RawResponseStream {
     pub(crate) async fn next_event(&mut self) -> Result<Option<RawStreamEvent>> {
         while let Some(event) = self.inner.rx_event.recv().await {
             let event = match event.context("Raw response stream failed")? {
-                ResponseEvent::Created => RawStreamEvent::Created,
+                ResponseEvent::Created { .. } => RawStreamEvent::Created,
                 ResponseEvent::OutputItemAdded(item) => RawStreamEvent::OutputItemAdded(item),
                 ResponseEvent::OutputTextDelta(delta) => RawStreamEvent::OutputTextDelta(delta),
                 ResponseEvent::ToolCallInputDelta {
@@ -395,6 +397,7 @@ pub(crate) fn build_api_request(mut request: RawApiRequest) -> Result<ResponsesA
         prompt_cache_key: None,
         text: None,
         client_metadata: None,
+        access_programs: None,
     })
 }
 
@@ -429,6 +432,7 @@ pub(crate) fn build_minimal_request(
         prompt_cache_key: None,
         text: None,
         client_metadata: None,
+        access_programs: None,
     }
 }
 
@@ -448,3 +452,7 @@ fn output_text(item: &ResponseItem) -> Option<String> {
         .join("");
     (!text.is_empty()).then_some(text)
 }
+
+#[cfg(test)]
+#[path = "runtime_tests.rs"]
+mod tests;

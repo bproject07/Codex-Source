@@ -370,7 +370,8 @@ pub(crate) fn ensure_chatgpt_auth(auth: &CodexAuth) -> Result<()> {
         | AuthMode::Headers
         | AuthMode::AgentIdentity
         | AuthMode::PersonalAccessToken
-        | AuthMode::BedrockApiKey => {
+        | AuthMode::BedrockApiKey
+        | AuthMode::BedrockAccessKeys => {
             bail!("codex-raw requires its own ChatGPT login; run `codex-raw login`")
         }
     }
@@ -384,6 +385,7 @@ fn auth_mode_label(mode: AuthMode) -> &'static str {
         AuthMode::AgentIdentity => "an access token",
         AuthMode::PersonalAccessToken => "a personal access token",
         AuthMode::BedrockApiKey => "an Amazon Bedrock API key",
+        AuthMode::BedrockAccessKeys => "Amazon Bedrock access keys",
     }
 }
 

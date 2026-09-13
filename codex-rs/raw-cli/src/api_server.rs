@@ -516,8 +516,11 @@ fn upstream_status(error: &CodexApiError) -> StatusCode {
         CodexApiError::Transport(codex_api::TransportError::Http { status, .. }) => *status,
         CodexApiError::InvalidRequest { .. }
         | CodexApiError::ContextWindowExceeded
-        | CodexApiError::CyberPolicy { .. } => StatusCode::BAD_REQUEST,
-        CodexApiError::QuotaExceeded | CodexApiError::RateLimit(_) => StatusCode::TOO_MANY_REQUESTS,
+        | CodexApiError::CyberPolicy { .. }
+        | CodexApiError::MisalignmentPolicyViolation { .. } => StatusCode::BAD_REQUEST,
+        CodexApiError::QuotaExceeded
+        | CodexApiError::RateLimit(_)
+        | CodexApiError::RateLimitExceeded { .. } => StatusCode::TOO_MANY_REQUESTS,
         CodexApiError::Retryable { .. } | CodexApiError::ServerOverloaded => {
             StatusCode::SERVICE_UNAVAILABLE
         }
