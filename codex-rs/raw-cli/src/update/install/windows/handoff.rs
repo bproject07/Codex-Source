@@ -25,7 +25,9 @@ use super::WINDOWS_APPLY_SCRIPT;
 use super::queued_lock::QUEUED_LOCK_SOURCE;
 use super::restart_plan::RESTART_PLAN_SOURCE;
 
-const HANDSHAKE_WAIT: Duration = Duration::from_secs(30);
+// Initial PowerShell startup and Add-Type compilation can exceed 30 seconds
+// on cold Windows systems; keep both handoff phases bounded without racing it.
+const HANDSHAKE_WAIT: Duration = Duration::from_secs(60);
 const SAFE_HELPER_ENVIRONMENT: [&str; 4] = ["SystemRoot", "TEMP", "TMP", "WINDIR"];
 
 #[derive(Debug)]

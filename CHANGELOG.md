@@ -17,6 +17,8 @@ and uses semantic versioning for the `codex-raw` executable.
   mode that lets Windows PowerShell execute the replacement script. Older
   builds could exit before transferring the updater lock or replacing the
   executable. A native Windows process test now covers this handoff in CI.
+- Allow slower initial PowerShell startup while keeping both updater lock
+  handshakes bounded. The Windows regression test does not retry failed starts.
 - Windows installations affected by the older helper must replace the
   executable once from a verified release archive; see `INSTALL.md`.
 
