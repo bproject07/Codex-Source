@@ -21,13 +21,19 @@ pub(crate) fn validate_tool_call_sequence(
                 ));
             }
             ResponseItem::FunctionCallOutput { call_id, .. } => {
-                if !calls.contains(call_id.as_str()) {
+                let call_id = call_id
+                    .as_deref()
+                    .filter(|call_id| !call_id.trim().is_empty())
+                    .ok_or_else(|| {
+                        ApiError::invalid("Tool output requires a non-empty call ID.", Some(param))
+                    })?;
+                if !calls.contains(call_id) {
                     return Err(ApiError::invalid(
                         format!("Tool output references unknown call ID '{call_id}'."),
                         Some(param),
                     ));
                 }
-                if !outputs.insert(call_id.as_str()) {
+                if !outputs.insert(call_id) {
                     return Err(ApiError::invalid(
                         format!("Duplicate tool output for call ID '{call_id}'."),
                         Some(param),

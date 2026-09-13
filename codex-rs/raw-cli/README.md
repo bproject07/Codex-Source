@@ -511,6 +511,13 @@ replacement rollback, minimal request construction, app-server wire behavior,
 HTTP validation, Responses, Chat and image mapping, SSE lifecycle ordering,
 usage, and function-call correlation.
 
+`src/runtime_tests.rs` also exercises a real loopback HTTP exchange through the
+upstream Responses client. It checks the complete outgoing request and the
+Raw stream's creation, text, completion, and token usage. Run this coverage
+after every upstream merge; isolation keeps adaptations local but cannot
+guarantee compatibility with changing internal Codex types. See
+[`UPSTREAM.md`](../../UPSTREAM.md) for the incorporated upstream revision.
+
 For a live, logged-in API process:
 
 ```shell

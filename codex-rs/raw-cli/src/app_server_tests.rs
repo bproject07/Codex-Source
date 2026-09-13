@@ -125,6 +125,7 @@ fn maps_usage_to_total_and_last_without_adding_tokens() {
         output_tokens: 13,
         reasoning_output_tokens: 2,
         total_tokens: 20,
+        ..Default::default()
     };
     let value = token_usage_value(&usage, Some(128_000));
 

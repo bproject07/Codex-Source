@@ -169,6 +169,20 @@ fn unauthorized_responses_advertise_bearer_authentication() {
 #[test]
 fn maps_typed_upstream_failures_to_useful_http_statuses() {
     assert_eq!(
+        upstream_status(&codex_api::ApiError::RateLimitExceeded {
+            message: "try later".to_string(),
+            delay: None,
+        }),
+        axum::http::StatusCode::TOO_MANY_REQUESTS
+    );
+    assert_eq!(
+        upstream_status(&codex_api::ApiError::MisalignmentPolicyViolation {
+            message: "request rejected".to_string(),
+            misalignment: None,
+        }),
+        axum::http::StatusCode::BAD_REQUEST
+    );
+    assert_eq!(
         upstream_status(&codex_api::ApiError::InvalidRequest {
             message: "bad input".to_string(),
         }),

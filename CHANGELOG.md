@@ -9,6 +9,15 @@ and uses semantic versioning for the `codex-raw` executable.
 
 ## [Unreleased]
 
+### Changed
+
+- Updated the inherited Codex source to upstream commit `516f2780fd` from
+  2026-09-13, retaining Raw's isolated authentication, stateless requests,
+  CLI, JSONL, HTTP interfaces, and verified updater.
+- Adapted Raw to the upstream response event and request types, and added an
+  HTTP transport regression test for the outgoing request, streamed text,
+  and exact token usage.
+
 ### Documentation
 
 - Published a second release-bound benchmark for the immutable `0.1.1`

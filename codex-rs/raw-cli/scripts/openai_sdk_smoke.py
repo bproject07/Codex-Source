@@ -67,7 +67,9 @@ def main() -> None:
                 if event.type == "response.function_call_arguments.delta"
             )
             tool_response = tool_stream.get_final_response()
-        call = next(item for item in tool_response.output if item.type == "function_call")
+        call = next(
+            item for item in tool_response.output if item.type == "function_call"
+        )
         replay = [
             {"role": "user", "content": "What is the weather in Sofia?"},
             *(item.model_dump(exclude_none=True) for item in tool_response.output),

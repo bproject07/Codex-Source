@@ -35,6 +35,7 @@ fn usage() -> TokenUsage {
         output_tokens: 11,
         reasoning_output_tokens: 5,
         total_tokens: 18,
+        ..Default::default()
     }
 }
 
@@ -106,6 +107,7 @@ fn parses_responses_array_and_function_round_trip() {
     assert_eq!(
         parsed.input[1],
         ResponseItem::FunctionCall {
+            encrypted_function_args: None,
             id: Some(ResponseItemId::from_server("fc_1".to_string())),
             name: "weather".to_string(),
             namespace: None,
@@ -118,7 +120,9 @@ fn parses_responses_array_and_function_round_trip() {
         parsed.input[2],
         ResponseItem::FunctionCallOutput {
             id: None,
-            call_id: "call_1".to_string(),
+            call_id: Some("call_1".to_string()),
+            name: None,
+            namespace: None,
             output: FunctionCallOutputPayload::from_text("24 C".to_string()),
             internal_chat_message_metadata_passthrough: None,
         }
@@ -268,6 +272,7 @@ fn parses_chat_history_tools_and_usage_option() {
     assert_eq!(
         parsed.request.input[3],
         ResponseItem::FunctionCall {
+            encrypted_function_args: None,
             id: None,
             name: "weather".to_string(),
             namespace: None,
@@ -289,6 +294,26 @@ fn rejects_unmatched_chat_tool_output() {
     .expect_err("unmatched tool output must fail");
 
     assert_eq!(error.param.as_deref(), Some("messages"));
+}
+
+#[test]
+fn responses_tool_outputs_still_require_call_ids() {
+    for call_id in [None, Some(json!(null)), Some(json!("")), Some(json!(" "))] {
+        let mut output =
+            json!({"type": "function_call_output", "name": "weather", "output": "24 C"});
+        if let Some(call_id) = call_id {
+            output["call_id"] = call_id;
+        }
+        let error = parse_responses_request(json!({
+            "input": [
+                {"type": "function_call", "name": "weather", "arguments": "{}", "call_id": "call_1"},
+                output
+            ]
+        }))
+        .expect_err("Raw requires explicit function call correlation");
+        assert_eq!(error.status, StatusCode::BAD_REQUEST);
+        assert_eq!(error.param.as_deref(), Some("input"));
+    }
 }
 
 #[test]
@@ -355,6 +380,7 @@ fn renders_responses_messages_calls_and_nested_usage() {
             internal_chat_message_metadata_passthrough: None,
         },
         ResponseItem::FunctionCall {
+            encrypted_function_args: None,
             id: Some(ResponseItemId::from_server("fc_1".to_string())),
             name: "weather".to_string(),
             namespace: None,
@@ -409,6 +435,7 @@ fn renders_chat_text_and_tool_calls() {
         124,
         &request,
         &[ResponseItem::FunctionCall {
+            encrypted_function_args: None,
             id: None,
             name: "weather".to_string(),
             namespace: None,

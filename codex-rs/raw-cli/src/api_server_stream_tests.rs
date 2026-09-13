@@ -25,6 +25,7 @@ fn usage() -> TokenUsage {
         output_tokens: 13,
         reasoning_output_tokens: 3,
         total_tokens: 20,
+        ..Default::default()
     }
 }
 
@@ -50,6 +51,7 @@ fn message(id: Option<&str>, text: &str) -> ResponseItem {
 
 fn function_call(id: Option<&str>) -> ResponseItem {
     ResponseItem::FunctionCall {
+        encrypted_function_args: None,
         id: id.map(|id| ResponseItemId::from_server(id.to_string())),
         name: "weather".to_string(),
         namespace: None,

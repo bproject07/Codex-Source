@@ -160,7 +160,9 @@ fn parse_chat_messages(values: Vec<Value>) -> WireResult<Vec<ResponseItem>> {
                 let output = text_parts(content, index)?.join("\n");
                 input.push(ResponseItem::FunctionCallOutput {
                     id: None,
-                    call_id,
+                    call_id: Some(call_id),
+                    name: None,
+                    namespace: None,
                     output: FunctionCallOutputPayload::from_text(output),
                     internal_chat_message_metadata_passthrough: None,
                 });
@@ -206,6 +208,7 @@ fn parse_chat_calls(value: Value, message_index: usize) -> WireResult<Vec<Respon
                 name,
                 namespace: None,
                 arguments,
+                encrypted_function_args: None,
                 call_id: id,
                 internal_chat_message_metadata_passthrough: None,
             })

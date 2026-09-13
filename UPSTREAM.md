@@ -11,6 +11,21 @@ notices. Raw-specific modifications are concentrated in `codex-rs/raw-cli`,
 with the small workspace, launcher, documentation, and automation changes
 needed to build and maintain that executable.
 
+## Current base
+
+The source tree now incorporates upstream commit
+[`516f2780fd227a80cd9fe89488f5039245090b71`](https://github.com/openai/codex/commit/516f2780fd227a80cd9fe89488f5039245090b71)
+from 2026-09-13. The merge retains the separate `codex-raw` crate, its public
+interfaces, isolated authentication storage, fork-specific automation, and the
+dependency security updates shipped in Raw 0.1.1.
+
+Raw's adapters account for updated response events, image results, optional
+request fields, authentication modes, and error variants. Function outputs
+still require explicit call IDs even though upstream now permits their
+omission. Raw's request and streaming tests are the
+compatibility checks for subsequent upstream updates; keeping the crate
+separate does not make internal Codex APIs a stable dependency contract.
+
 ## Update policy
 
 - Treat `openai/codex` as a read-only upstream.
