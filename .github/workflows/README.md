@@ -3,7 +3,8 @@
 This public fork intentionally carries only two workflows:
 
 - `codex-raw-ci.yml` checks formatting, Clippy, nextest tests, and a locked
-  release build for the `codex-raw` crate.
+  release build for the `codex-raw` crate. A native Windows job also runs the
+  Raw tests, including the real PowerShell updater lock handoff.
 - `codex-raw-release.yml` builds and tests four platform archives (Linux x64,
   GitHub-hosted native Linux ARM64, Windows x64, and macOS Intel) and
   publishes a GitHub release only for `codex-raw-v*` tags in

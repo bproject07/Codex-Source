@@ -32,6 +32,14 @@ max-threads = 1
 max-threads = 2
 
 [[profile.default.overrides]]
+# Cover cold PowerShell startup and both bounded ownership handshakes, leaving
+# time for helper cleanup. Do not hide a failed startup behind a warm retry.
+platform = 'cfg(windows)'
+filter = 'package(codex-raw) & test(helper_transfers_lock_ownership_without_a_console)'
+slow-timeout = { period = "1m", terminate-after = 3 }
+retries = 0
+
+[[profile.default.overrides]]
 # Do not add new tests here
 filter = 'test(rmcp_client) | test(humanlike_typing_1000_chars_appears_live_no_placeholder)'
 slow-timeout = { period = "1m", terminate-after = 4 }
